@@ -2,17 +2,25 @@ import { Engine } from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
 import { World } from "./World";
+import { Config } from "./Config";
+import { DebugController } from "./DebugController";
 
 export class Game extends Engine {
-  private lights: Lights;
-  private world: World;
+  public config: Config;
+  public lights: Lights;
+  public world: World;
+  public debugController: DebugController;
 
   constructor(domElement: HTMLElement) {
     super({ domElement });
-    this.lights = new Lights();
-    this.world = new World({ size: 10 });
+    this.config = new Config();
+    this.debugController = new DebugController(this);
 
-    this.view.position.set(0, 10, 10);
+    this.view.position.set(16, 16, 16);
+
+    this.lights = new Lights();
+    this.world = new World({ width: 32, height: 16 });
+    this.stats.activate();
 
     this.createLights();
     this.world.generate();

@@ -13,8 +13,6 @@ export class Renderer extends THREE.WebGLRenderer {
     this.engine = Engine.getInstance();
     this.engine.domElement.appendChild(this.domElement);
 
-    this.onResize();
-
     this.engine.viewport.events.on("change", () => {
       this.onResize();
     });

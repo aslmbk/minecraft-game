@@ -2,7 +2,7 @@ import { Events } from "./Events";
 import { Timer } from "three/addons/misc/Timer.js";
 
 export class Time extends Timer {
-  public events = new Events<{
+  public readonly events = new Events<{
     trigger: "tick";
     args: { elapsed: number; delta: number }[];
   }>();

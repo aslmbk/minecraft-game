@@ -7,15 +7,20 @@ export class Viewport {
   public height = 0;
   public ratio = 0;
   public pixelRatio = 0;
-  public events = new Events<{ trigger: "change"; args: [] }>();
+  public readonly events = new Events<{ trigger: "change"; args: [] }>();
 
   constructor() {
     this.engine = Engine.getInstance();
-    this.measure();
+
     window.addEventListener("resize", () => {
       this.measure();
       this.events.trigger("change");
     });
+
+    setTimeout(() => {
+      this.measure();
+      this.events.trigger("change");
+    }, 1);
   }
 
   private measure() {
