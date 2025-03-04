@@ -16,10 +16,18 @@ export class Game extends Engine {
     this.config = new Config();
     this.debugController = new DebugController(this);
 
+    this.renderer.setClearColor(this.config.clearColor);
     this.view.position.set(16, 16, 16);
 
     this.lights = new Lights();
-    this.world = new World({ width: 32, height: 16 });
+    this.world = new World({
+      width: this.config.worldWidth,
+      height: this.config.worldHeight,
+      params: {
+        seed: this.config.seed,
+        terrain: this.config.terrain,
+      },
+    });
     this.stats.activate();
 
     this.createLights();
@@ -31,7 +39,7 @@ export class Game extends Engine {
     const directionalLight = this.lights.createDirectionalLight({
       color: "white",
       intensity: 2,
-      position: new THREE.Vector3(1, 1, 1),
+      position: new THREE.Vector3(16, 16, 0),
     });
     this.scene.add(directionalLight);
 
@@ -43,6 +51,8 @@ export class Game extends Engine {
   }
 
   public dispose() {
+    this.stats.deactivate();
+    this.debug.children.forEach((child) => child.dispose());
     this.scene.dispose();
   }
 }
