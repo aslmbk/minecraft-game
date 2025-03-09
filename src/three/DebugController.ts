@@ -9,7 +9,7 @@ export class DebugController {
   private createRendererFolder(game: Game) {
     const rendererFolder = game.debug.addFolder({
       title: "renderer",
-      expanded: true,
+      expanded: false,
     });
 
     rendererFolder
@@ -23,7 +23,7 @@ export class DebugController {
     const paramsFolder = game.debug
       .addFolder({
         title: "params",
-        expanded: true,
+        expanded: false,
       })
       .on("change", () => {
         game.world.setParams(game.config.params);

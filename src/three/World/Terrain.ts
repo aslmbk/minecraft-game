@@ -1,4 +1,4 @@
-import { Blocks } from "./Blocks";
+import { blocks } from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
 
@@ -60,7 +60,7 @@ export class Terrain {
         const row: (typeof this.data)[number][number] = [];
         for (let z = 0; z < this.params.world.width; z++) {
           row.push({
-            id: Blocks.EMPTY.id,
+            id: blocks.empty.id,
             instanceId: null,
           });
         }
@@ -73,17 +73,17 @@ export class Terrain {
   private generateResources() {
     const resources = [
       {
-        resource: Blocks.STONE,
+        resource: blocks.stone,
         scale: this.params.blocks.stone.scale,
         threshold: this.params.blocks.stone.threshold,
       },
       {
-        resource: Blocks.COAL,
+        resource: blocks.coal,
         scale: this.params.blocks.coal.scale,
         threshold: this.params.blocks.coal.threshold,
       },
       {
-        resource: Blocks.IRON,
+        resource: blocks.iron,
         scale: this.params.blocks.iron.scale,
         threshold: this.params.blocks.iron.threshold,
       },
@@ -121,14 +121,14 @@ export class Terrain {
         height = Math.max(0, Math.min(height, this.params.world.height - 1));
         for (let y = 0; y < this.params.world.height; y++) {
           if (y === height) {
-            this.setBlockId(x, y, z, Blocks.GRASS.id);
+            this.setBlockId(x, y, z, blocks.grass.id);
           } else if (
             y < height &&
-            this.getBlock(x, y, z)?.id === Blocks.EMPTY.id
+            this.getBlock(x, y, z)?.id === blocks.empty.id
           ) {
-            this.setBlockId(x, y, z, Blocks.DIRT.id);
+            this.setBlockId(x, y, z, blocks.dirt.id);
           } else if (y > height) {
-            this.setBlockId(x, y, z, Blocks.EMPTY.id);
+            this.setBlockId(x, y, z, blocks.empty.id);
           }
         }
       }
@@ -167,19 +167,19 @@ export class Terrain {
   }
 
   public isBlockObscured(x: number, y: number, z: number) {
-    const up = this.getBlock(x, y + 1, z)?.id ?? Blocks.EMPTY.id;
-    const down = this.getBlock(x, y - 1, z)?.id ?? Blocks.EMPTY.id;
-    const left = this.getBlock(x + 1, y, z)?.id ?? Blocks.EMPTY.id;
-    const right = this.getBlock(x - 1, y, z)?.id ?? Blocks.EMPTY.id;
-    const forward = this.getBlock(x, y, z + 1)?.id ?? Blocks.EMPTY.id;
-    const back = this.getBlock(x, y, z - 1)?.id ?? Blocks.EMPTY.id;
+    const up = this.getBlock(x, y + 1, z)?.id ?? blocks.empty.id;
+    const down = this.getBlock(x, y - 1, z)?.id ?? blocks.empty.id;
+    const left = this.getBlock(x + 1, y, z)?.id ?? blocks.empty.id;
+    const right = this.getBlock(x - 1, y, z)?.id ?? blocks.empty.id;
+    const forward = this.getBlock(x, y, z + 1)?.id ?? blocks.empty.id;
+    const back = this.getBlock(x, y, z - 1)?.id ?? blocks.empty.id;
     return (
-      up !== Blocks.EMPTY.id &&
-      down !== Blocks.EMPTY.id &&
-      left !== Blocks.EMPTY.id &&
-      right !== Blocks.EMPTY.id &&
-      forward !== Blocks.EMPTY.id &&
-      back !== Blocks.EMPTY.id
+      up !== blocks.empty.id &&
+      down !== blocks.empty.id &&
+      left !== blocks.empty.id &&
+      right !== blocks.empty.id &&
+      forward !== blocks.empty.id &&
+      back !== blocks.empty.id
     );
   }
 

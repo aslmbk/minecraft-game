@@ -1,38 +1,53 @@
-type Block = {
+type Block<T extends string> = {
   id: number;
-  name: string;
+  name: T;
   color: string | number;
 };
 
-export class Blocks {
-  static readonly EMPTY: Block = {
+export const blockNames = [
+  "empty",
+  "grass",
+  "dirt",
+  "stone",
+  "coal",
+  "iron",
+] as const;
+
+export type BlockNameType = (typeof blockNames)[number];
+
+export type BlocksInterface = {
+  [K in BlockNameType]: Block<K>;
+};
+
+export const blocks: BlocksInterface = {
+  empty: {
     id: 0,
     name: "empty",
     color: "transparent",
-  };
-  static readonly GRASS: Block = {
+  },
+  grass: {
     id: 1,
     name: "grass",
     color: 0x559020,
-  };
-  static readonly DIRT: Block = {
+  },
+  dirt: {
     id: 2,
     name: "dirt",
     color: 0x807020,
-  };
-  static readonly STONE: Block = {
+  },
+  stone: {
     id: 3,
     name: "stone",
     color: 0x808080,
-  };
-  static readonly COAL: Block = {
+  },
+  coal: {
     id: 4,
     name: "coal",
     color: 0x202020,
-  };
-  static readonly IRON: Block = {
+  },
+  iron: {
     id: 5,
     name: "iron",
     color: 0x806060,
-  };
-}
+  },
+};

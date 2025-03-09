@@ -17,6 +17,7 @@ export class Game extends Engine {
     this.debugController = new DebugController(this);
 
     this.renderer.setClearColor(this.config.clearColor);
+    this.renderer.shadowMap.enabled = true;
     this.view.position.set(50, 50, 50);
 
     this.lights = new Lights();
@@ -32,8 +33,18 @@ export class Game extends Engine {
     const directionalLight = this.lights.createDirectionalLight({
       color: "white",
       intensity: 2,
-      position: new THREE.Vector3(16, 16, 0),
+      position: new THREE.Vector3(40, 40, -40),
     });
+    directionalLight.castShadow = true;
+    directionalLight.shadow.intensity = 0.9;
+    directionalLight.shadow.mapSize.set(2048, 2048);
+    directionalLight.shadow.radius = 8;
+    directionalLight.shadow.camera.near = 10;
+    directionalLight.shadow.camera.far = 110;
+    directionalLight.shadow.camera.left = -50;
+    directionalLight.shadow.camera.right = 50;
+    directionalLight.shadow.camera.top = 50;
+    directionalLight.shadow.camera.bottom = -50;
     this.scene.add(directionalLight);
 
     const ambientLight = this.lights.createAmbientLight({
