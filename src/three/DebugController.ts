@@ -3,8 +3,7 @@ import { Game } from "./Game";
 export class DebugController {
   constructor(game: Game) {
     this.createRendererFolder(game);
-    this.createWorldFolder(game);
-    this.createTerrainFolder(game);
+    this.createParamsFolder(game);
   }
 
   private createRendererFolder(game: Game) {
@@ -20,95 +19,52 @@ export class DebugController {
       });
   }
 
-  private createWorldFolder(game: Game) {
-    const worldFolder = game.debug.addFolder({
-      title: "world",
-      expanded: true,
+  private createParamsFolder(game: Game) {
+    const paramsFolder = game.debug
+      .addFolder({
+        title: "params",
+        expanded: true,
+      })
+      .on("change", () => {
+        game.world.setParams(game.config.params);
+        game.world.generate();
+      });
+
+    paramsFolder.addBinding(game.config.params, "seed", {
+      label: "rng seed",
     });
-
-    worldFolder
-      .addBinding(game.config, "worldWidth", {
-        min: 1,
-        max: 100,
-        step: 1,
-      })
-      .on("change", ({ value }) => {
-        game.world.setWorldSize(value, game.config.worldHeight);
-        game.world.generate();
-      });
-
-    worldFolder
-      .addBinding(game.config, "worldHeight", {
-        min: 1,
-        max: 100,
-        step: 1,
-      })
-      .on("change", ({ value }) => {
-        game.world.setWorldSize(game.config.worldWidth, value);
-        game.world.generate();
-      });
-  }
-
-  private createTerrainFolder(game: Game) {
-    const terrainFolder = game.debug.addFolder({
-      title: "terrain",
-      expanded: true,
+    paramsFolder.addBinding(game.config.params.world, "width", {
+      label: "world width",
     });
-
-    terrainFolder
-      .addBinding(game.config, "seed", {
-        min: 0,
-        max: 1000000,
-        step: 1,
-      })
-      .on("change", ({ value }) => {
-        game.world.setParams({
-          seed: value,
-          terrain: game.config.terrain,
-        });
-        game.world.generate();
-      });
-
-    terrainFolder
-      .addBinding(game.config.terrain, "scale", {
-        min: 0,
-        max: 100,
-        step: 1,
-      })
-      .on("change", ({ value }) => {
-        game.world.setParams({
-          seed: game.config.seed,
-          terrain: { ...game.config.terrain, scale: value },
-        });
-        game.world.generate();
-      });
-
-    terrainFolder
-      .addBinding(game.config.terrain, "magnitude", {
-        min: 0,
-        max: 1,
-        step: 0.01,
-      })
-      .on("change", ({ value }) => {
-        game.world.setParams({
-          seed: game.config.seed,
-          terrain: { ...game.config.terrain, magnitude: value },
-        });
-        game.world.generate();
-      });
-
-    terrainFolder
-      .addBinding(game.config.terrain, "offset", {
-        min: 0,
-        max: 1,
-        step: 0.01,
-      })
-      .on("change", ({ value }) => {
-        game.world.setParams({
-          seed: game.config.seed,
-          terrain: { ...game.config.terrain, offset: value },
-        });
-        game.world.generate();
-      });
+    paramsFolder.addBinding(game.config.params.world, "height", {
+      label: "world height",
+    });
+    paramsFolder.addBinding(game.config.params.terrain, "scale", {
+      label: "terrain scale",
+    });
+    paramsFolder.addBinding(game.config.params.terrain, "magnitude", {
+      label: "terrain magnitude",
+    });
+    paramsFolder.addBinding(game.config.params.terrain, "offset", {
+      label: "terrain offset",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.stone, "scale", {
+      label: "stone scale",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.stone, "threshold", {
+      label: "stone threshold",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.coal, "scale", {
+      label: "coal scale",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.coal, "threshold", {
+      label: "coal threshold",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.iron, "scale", {
+      label: "iron scale",
+    });
+    paramsFolder.addBinding(game.config.params.blocks.iron, "threshold", {
+      label: "iron threshold",
+    });
   }
 }

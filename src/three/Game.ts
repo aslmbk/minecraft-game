@@ -17,17 +17,10 @@ export class Game extends Engine {
     this.debugController = new DebugController(this);
 
     this.renderer.setClearColor(this.config.clearColor);
-    this.view.position.set(16, 16, 16);
+    this.view.position.set(50, 50, 50);
 
     this.lights = new Lights();
-    this.world = new World({
-      width: this.config.worldWidth,
-      height: this.config.worldHeight,
-      params: {
-        seed: this.config.seed,
-        terrain: this.config.terrain,
-      },
-    });
+    this.world = new World(this.config.params);
     this.stats.activate();
 
     this.createLights();

@@ -20,4 +20,19 @@ export class Blocks {
     name: "dirt",
     color: 0x807020,
   };
+  static readonly STONE: Block = {
+    id: 3,
+    name: "stone",
+    color: 0x808080,
+  };
+  static readonly COAL: Block = {
+    id: 4,
+    name: "coal",
+    color: 0x202020,
+  };
+  static readonly IRON: Block = {
+    id: 5,
+    name: "iron",
+    color: 0x806060,
+  };
 }
