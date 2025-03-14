@@ -9,13 +9,6 @@ type BlockType = {
   z: number;
 };
 
-type CollisionType = {
-  block: BlockType;
-  contactPoint: BlockType;
-  normal: THREE.Vector3;
-  overlap: number;
-};
-
 export class Physics {
   private world: World;
   private player: Player;
@@ -80,48 +73,6 @@ export class Physics {
     }
 
     return candidates;
-  }
-
-  private narrowPhase(candidates: BlockType[]) {
-    const collisions: CollisionType[] = [];
-    const p = this.player.position;
-    for (const candidate of candidates) {
-      const closestPoint = {
-        x: Math.max(candidate.x - 0.5, Math.min(p.x, candidate.x + 0.5)),
-        y: Math.max(
-          candidate.y - 0.5,
-          Math.min(p.y - this.player.params.height / 2, candidate.y + 0.5)
-        ),
-        z: Math.max(candidate.z - 0.5, Math.min(p.z, candidate.z + 0.5)),
-      };
-
-      if (this.pointInPlayerBoundingCylinder(closestPoint)) {
-        const dx = closestPoint.x - p.x;
-        const dy = closestPoint.y - (p.y - this.player.params.height / 2);
-        const dz = closestPoint.z - p.z;
-        const overlapY = this.player.params.height / 2 - Math.abs(dy);
-        const overlapXZ =
-          this.player.params.radius - Math.sqrt(dx * dx + dz * dz);
-
-        const normal = new THREE.Vector3(0, 0, 0);
-        let overlap = overlapY;
-        if (overlapY < overlapXZ) {
-          normal.set(0, -Math.sign(dy), 0);
-        } else {
-          normal.set(-dx, 0, -dz).normalize();
-          overlap = overlapXZ;
-        }
-
-        collisions.push({
-          block: candidate,
-          contactPoint: closestPoint,
-          normal,
-          overlap,
-        });
-      }
-    }
-
-    return collisions;
   }
 
   private getAABB() {
