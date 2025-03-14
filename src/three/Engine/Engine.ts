@@ -46,7 +46,7 @@ export class Engine {
     this.stats = new Stats();
   }
 
-  public static getInstance(): Engine {
+  public static getInstance() {
     if (!Engine.instance) {
       throw new Error("Engine instance not initialized");
     }

@@ -2,7 +2,7 @@ import { blocks } from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
 
-type TerrainType = {
+export type TerrainType = {
   id: number;
   instanceId: number | null;
 };

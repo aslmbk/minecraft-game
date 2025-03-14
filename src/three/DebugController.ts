@@ -3,6 +3,7 @@ import { Game } from "./Game";
 export class DebugController {
   constructor(game: Game) {
     this.createRendererFolder(game);
+    this.createPlayerFolder(game);
     this.createParamsFolder(game);
   }
 
@@ -19,6 +20,21 @@ export class DebugController {
       });
   }
 
+  private createPlayerFolder(game: Game) {
+    const playerFolder = game.debug
+      .addFolder({
+        title: "player",
+        expanded: false,
+      })
+      .on("change", () => {
+        game.player.setParams(game.config.playerConfig);
+      });
+
+    playerFolder.addBinding(game.config.playerConfig, "moveSpeed", {
+      label: "move speed",
+    });
+  }
+
   private createParamsFolder(game: Game) {
     const paramsFolder = game.debug
       .addFolder({
@@ -26,44 +42,44 @@ export class DebugController {
         expanded: false,
       })
       .on("change", () => {
-        game.world.setParams(game.config.params);
+        game.world.setParams(game.config.worldParams);
         game.world.generate();
       });
 
-    paramsFolder.addBinding(game.config.params, "seed", {
+    paramsFolder.addBinding(game.config.worldParams, "seed", {
       label: "rng seed",
     });
-    paramsFolder.addBinding(game.config.params.world, "width", {
+    paramsFolder.addBinding(game.config.worldParams.world, "width", {
       label: "world width",
     });
-    paramsFolder.addBinding(game.config.params.world, "height", {
+    paramsFolder.addBinding(game.config.worldParams.world, "height", {
       label: "world height",
     });
-    paramsFolder.addBinding(game.config.params.terrain, "scale", {
+    paramsFolder.addBinding(game.config.worldParams.terrain, "scale", {
       label: "terrain scale",
     });
-    paramsFolder.addBinding(game.config.params.terrain, "magnitude", {
+    paramsFolder.addBinding(game.config.worldParams.terrain, "magnitude", {
       label: "terrain magnitude",
     });
-    paramsFolder.addBinding(game.config.params.terrain, "offset", {
+    paramsFolder.addBinding(game.config.worldParams.terrain, "offset", {
       label: "terrain offset",
     });
-    paramsFolder.addBinding(game.config.params.blocks.stone, "scale", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.stone, "scale", {
       label: "stone scale",
     });
-    paramsFolder.addBinding(game.config.params.blocks.stone, "threshold", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.stone, "threshold", {
       label: "stone threshold",
     });
-    paramsFolder.addBinding(game.config.params.blocks.coal, "scale", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.coal, "scale", {
       label: "coal scale",
     });
-    paramsFolder.addBinding(game.config.params.blocks.coal, "threshold", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.coal, "threshold", {
       label: "coal threshold",
     });
-    paramsFolder.addBinding(game.config.params.blocks.iron, "scale", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.iron, "scale", {
       label: "iron scale",
     });
-    paramsFolder.addBinding(game.config.params.blocks.iron, "threshold", {
+    paramsFolder.addBinding(game.config.worldParams.blocks.iron, "threshold", {
       label: "iron threshold",
     });
   }

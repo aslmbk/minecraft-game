@@ -1,9 +1,17 @@
+import { PlayerConfig } from "./Player/Player";
 import { WorldParams } from "./World";
 
 export class Config {
   clearColor = "#86d1e5";
 
-  params: WorldParams = {
+  playerConfig: PlayerConfig = {
+    moveSpeed: 5,
+    radius: 0.5,
+    height: 1.75,
+    gravity: 9.81,
+  };
+
+  worldParams: WorldParams = {
     seed: 100,
     world: {
       width: 64,

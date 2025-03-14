@@ -10,7 +10,7 @@ export class World extends THREE.Group {
   private blockMaterial: THREE.MeshLambertMaterial;
   private blockMaterialUniforms: Record<string, THREE.IUniform> | null = null;
   private params: WorldParams;
-  private terrain: Terrain;
+  public terrain: Terrain;
   private loader: Loader;
 
   constructor(params: WorldParams) {
@@ -109,7 +109,6 @@ export class World extends THREE.Group {
 
     const blocksArray = Object.values(blocks);
     const matrix = new THREE.Matrix4();
-    const offset = this.params.world.width / 2;
     for (let x = 0; x < this.params.world.width; x++) {
       for (let y = 0; y < this.params.world.height; y++) {
         for (let z = 0; z < this.params.world.width; z++) {
@@ -122,7 +121,7 @@ export class World extends THREE.Group {
           }
           const block = blocksArray.find((block) => block.id === blockId)!;
           const instanceId = instances.count++;
-          matrix.makeTranslation(x - offset, y, z - offset);
+          matrix.setPosition(x, y, z);
           instances.setMatrixAt(instanceId, matrix);
           blockTypeAttribute.setX(instanceId, block.id);
           this.terrain.setBlockInstanceId(x, y, z, instanceId);
