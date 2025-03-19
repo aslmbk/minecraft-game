@@ -52,7 +52,7 @@ export class Game extends Engine {
     this.createLights();
     this.world.generate();
     this.scene.add(this.world);
-    this.scene.add(this.player.createBoundsHelper());
+    // this.scene.add(this.player.createBoundsHelper());
 
     this.time.events.on("tick", ({ delta }) => {
       this.update(delta);

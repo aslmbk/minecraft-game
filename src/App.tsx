@@ -16,7 +16,7 @@ export const App = () => {
     <div className="App">
       <div className="game" ref={containerRef} />
       <div className={`start-screen ${game ? "hidden" : ""}`}>
-        <h1 className="title">Minecraft</h1>
+        <h1 className="title">Minecraftless</h1>
         <button className="play-button" onClick={startGame}>
           Play
         </button>
