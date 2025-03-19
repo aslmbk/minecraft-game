@@ -53,12 +53,8 @@ export class Game extends Engine {
     this.world.generate();
     this.scene.add(this.world);
     this.scene.add(this.player.createBoundsHelper());
-    const boundsCameraHelper = new THREE.CameraHelper(this.pointerLockCamera);
-    boundsCameraHelper.visible = true;
-    this.scene.add(boundsCameraHelper);
 
     this.time.events.on("tick", ({ delta }) => {
-      boundsCameraHelper.update();
       this.update(delta);
     });
     this.viewport.events.on("change", () => {

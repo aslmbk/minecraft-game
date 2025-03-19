@@ -41,6 +41,7 @@ export class Player {
 
   constructor(params: PlayerParams, world: World) {
     this.controls = params.controls;
+    this.controls.lock();
     this._params = params.playerConfig;
     this.physics = new Physics(world, this);
     window.addEventListener("keydown", this.onKeyDown);
