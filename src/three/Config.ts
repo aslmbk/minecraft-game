@@ -5,11 +5,11 @@ export class Config {
   clearColor = "#86d1e5";
 
   playerConfig: PlayerConfig = {
-    moveSpeed: 8,
+    moveSpeed: 10,
     radius: 0.5,
     height: 1.75,
     gravity: 32,
-    jumpSpeed: 8,
+    jumpSpeed: 10,
   };
 
   worldParams: WorldParams = {

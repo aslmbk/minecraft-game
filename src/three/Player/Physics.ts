@@ -22,17 +22,21 @@ export class Physics {
   private closestPointTestVariable = new THREE.Vector3();
   private playerBottomTestVariable = new THREE.Vector3();
 
+  public lerpDt = 0;
+
   constructor(world: World, player: Player) {
     this.world = world;
     this.player = player;
   }
 
-  public detectCollisions() {
+  public detectCollisions(delta: number) {
+    this.lerpDt += delta;
     this.player.setOnGround(false);
     const candidates = this.broadPhase();
     const collisions = this.narrowPhase(candidates);
 
     if (collisions.length > 0) {
+      this.lerpDt = 0;
       this.resolveCollisions(collisions);
     }
   }

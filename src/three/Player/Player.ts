@@ -37,7 +37,10 @@ export class Player {
   private boundsHelper: THREE.Mesh | null = null;
 
   private _worldVelocity = new THREE.Vector3();
+  private _nextPosition = new THREE.Vector3();
   private onGround = false;
+
+  private currentPositionTestVariable = new THREE.Vector3();
 
   constructor(params: PlayerParams, world: World) {
     this.controls = params.controls;
@@ -46,6 +49,7 @@ export class Player {
     this.physics = new Physics(world, this);
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
+    this._nextPosition.copy(this.controls.object.position);
   }
 
   private keyDownHandler(event: KeyboardEvent) {
@@ -82,7 +86,7 @@ export class Player {
   }
 
   public get position() {
-    return this.controls.object.position;
+    return this._nextPosition;
   }
 
   public get params() {
@@ -109,14 +113,22 @@ export class Player {
   }
 
   public update(delta: number) {
+    this.controls.object.position.lerp(
+      this._nextPosition,
+      Math.min(1, this.physics.lerpDt + delta * 10)
+    );
     if (!this.isActive) return;
     this.velocity.x = this.input.x;
     this.velocity.z = this.input.z;
     this.velocity.y -= this._params.gravity * delta;
+    this.currentPositionTestVariable.copy(this.controls.object.position);
+    this.controls.object.position.copy(this.position);
     this.controls.moveRight(this.velocity.x * delta);
     this.controls.moveForward(this.velocity.z * delta);
-    this.position.y += this.velocity.y * delta;
-    this.physics.detectCollisions();
+    this.controls.object.position.y += this.velocity.y * delta;
+    this.position.copy(this.controls.object.position);
+    this.controls.object.position.copy(this.currentPositionTestVariable);
+    this.physics.detectCollisions(delta);
     if (this.boundsHelper) {
       this.boundsHelper.position.copy(this.position);
       this.boundsHelper.position.y -= this._params.height / 2;
