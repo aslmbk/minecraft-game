@@ -9,51 +9,50 @@ type BlockType = {
   z: number;
 };
 
+type CollisionType = {
+  block: BlockType;
+  contactPoint: BlockType;
+  normal: THREE.Vector3;
+  overlap: number;
+};
+
 export class Physics {
   private world: World;
   private player: Player;
+  private closestPointTestVariable = new THREE.Vector3();
+  private playerBottomTestVariable = new THREE.Vector3();
 
   constructor(world: World, player: Player) {
     this.world = world;
     this.player = player;
   }
 
-  public getMaxVelocity(velocity: THREE.Vector3) {
+  public detectCollisions() {
+    this.player.setOnGround(false);
     const candidates = this.broadPhase();
-    const newVelocity = velocity.clone();
+    const collisions = this.narrowPhase(candidates);
 
-    const p = this.player.position.clone().add(velocity);
-
-    for (const candidate of candidates) {
-      const closestPoint = {
-        x: Math.max(candidate.x - 0.5, Math.min(p.x, candidate.x + 0.5)),
-        y: Math.max(
-          candidate.y - 0.5,
-          Math.min(p.y - this.player.params.height / 2, candidate.y + 0.5)
-        ),
-        z: Math.max(candidate.z - 0.5, Math.min(p.z, candidate.z + 0.5)),
-      };
-
-      if (this.pointInPlayerBoundingCylinder(closestPoint)) {
-        const dx = closestPoint.x - p.x;
-        const dy = closestPoint.y - (p.y - this.player.params.height / 2);
-        const dz = closestPoint.z - p.z;
-        newVelocity.x = Math.max(
-          0,
-          Math.min(newVelocity.x, velocity.x - Math.abs(dx))
-        );
-        newVelocity.z = Math.max(
-          0,
-          Math.min(newVelocity.z, velocity.z - Math.abs(dz))
-        );
-        newVelocity.y = Math.max(
-          0,
-          Math.min(newVelocity.y, velocity.y + Math.abs(dy))
-        );
-      }
+    if (collisions.length > 0) {
+      this.resolveCollisions(collisions);
     }
+  }
 
-    return newVelocity;
+  private resolveCollisions(collisions: CollisionType[]) {
+    collisions.sort((a, b) => a.overlap - b.overlap);
+
+    for (const collision of collisions) {
+      if (!this.pointInPlayerBoundingCylinder(collision.contactPoint)) continue;
+
+      const deltaPosition = collision.normal.clone();
+      deltaPosition.multiplyScalar(collision.overlap);
+      this.player.position.add(deltaPosition);
+
+      const magnitude = this.player.worldVelocity.dot(collision.normal);
+      const velocityAdjustment = collision.normal
+        .clone()
+        .multiplyScalar(magnitude);
+      this.player.applyWorldDeltaVelocity(velocityAdjustment.negate());
+    }
   }
 
   private broadPhase() {
@@ -65,14 +64,78 @@ export class Physics {
         for (let z = playerAABB.z.min; z <= playerAABB.z.max; z++) {
           const block = this.world.terrain.getBlock(x, y, z);
           if (block && block.id !== blocks.empty.id) {
-            const blockPosition = { x, y, z };
-            candidates.push(blockPosition);
+            candidates.push({ x, y, z });
           }
         }
       }
     }
 
     return candidates;
+  }
+
+  private narrowPhase(candidates: BlockType[]) {
+    const collisions: CollisionType[] = [];
+    for (const candidate of candidates) {
+      const closestPoint = {
+        x: Math.max(
+          candidate.x - 0.5,
+          Math.min(this.player.position.x, candidate.x + 0.5)
+        ),
+        y: Math.max(
+          candidate.y - 0.5,
+          Math.min(
+            this.player.position.y - this.player.params.height / 2,
+            candidate.y + 0.5
+          )
+        ),
+        z: Math.max(
+          candidate.z - 0.5,
+          Math.min(this.player.position.z, candidate.z + 0.5)
+        ),
+      };
+
+      this.playerBottomTestVariable.copy(this.player.position);
+      this.playerBottomTestVariable.y -= this.player.params.height;
+      this.closestPointTestVariable.copy(closestPoint);
+      if (
+        this.playerBottomTestVariable.distanceTo(
+          this.closestPointTestVariable
+        ) < 0.1
+      ) {
+        this.player.setOnGround(true);
+      }
+
+      if (this.pointInPlayerBoundingCylinder(closestPoint)) {
+        // TODO: recalculate overlapY like in the code above
+        // TODO refactor this method by dividing the normals and overlap variables to the separate variables
+        const dx = closestPoint.x - this.player.position.x;
+        const dy =
+          closestPoint.y -
+          (this.player.position.y - this.player.params.height / 2);
+        const dz = closestPoint.z - this.player.position.z;
+        const overlapY = this.player.params.height / 2 - Math.abs(dy);
+        const overlapXZ =
+          this.player.params.radius - Math.sqrt(dx * dx + dz * dz);
+
+        const normal = new THREE.Vector3(0, 0, 0);
+        let overlap = overlapY;
+        if (overlapY < overlapXZ) {
+          normal.set(0, -Math.sign(dy), 0);
+        } else {
+          normal.set(-dx, 0, -dz).normalize();
+          overlap = overlapXZ;
+        }
+
+        collisions.push({
+          block: candidate,
+          contactPoint: closestPoint,
+          normal,
+          overlap,
+        });
+      }
+    }
+
+    return collisions;
   }
 
   private getAABB() {

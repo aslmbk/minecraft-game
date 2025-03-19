@@ -33,6 +33,18 @@ export class DebugController {
     playerFolder.addBinding(game.config.playerConfig, "moveSpeed", {
       label: "move speed",
     });
+    playerFolder.addBinding(game.config.playerConfig, "jumpSpeed", {
+      label: "jump speed",
+    });
+    playerFolder.addBinding(game.config.playerConfig, "radius", {
+      label: "radius",
+    });
+    playerFolder.addBinding(game.config.playerConfig, "height", {
+      label: "height",
+    });
+    playerFolder.addBinding(game.config.playerConfig, "gravity", {
+      label: "gravity",
+    });
   }
 
   private createParamsFolder(game: Game) {

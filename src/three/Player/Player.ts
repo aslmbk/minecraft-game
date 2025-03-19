@@ -8,6 +8,7 @@ export type PlayerConfig = {
   radius: number;
   height: number;
   gravity: number;
+  jumpSpeed: number;
 };
 
 type PlayerParams = {
@@ -30,9 +31,13 @@ export class Player {
     KeyS: false,
     KeyA: false,
     KeyD: false,
+    Space: false,
   };
 
   private boundsHelper: THREE.Mesh | null = null;
+
+  private _worldVelocity = new THREE.Vector3();
+  private onGround = false;
 
   constructor(params: PlayerParams, world: World) {
     this.controls = params.controls;
@@ -62,6 +67,9 @@ export class Player {
     if (this.keys.KeyS) this.input.z -= this._params.moveSpeed;
     if (this.keys.KeyA) this.input.x -= this._params.moveSpeed;
     if (this.keys.KeyD) this.input.x += this._params.moveSpeed;
+    if (this.keys.Space && this.onGround) {
+      this.velocity.y += this._params.jumpSpeed;
+    }
 
     if (this.input.length() > 0) {
       this.input.normalize().multiplyScalar(this._params.moveSpeed);
@@ -80,16 +88,34 @@ export class Player {
     return this._params;
   }
 
+  public get worldVelocity() {
+    this._worldVelocity.copy(this.velocity);
+    this._worldVelocity.applyEuler(
+      new THREE.Euler(0, this.controls.object.rotation.y, 0)
+    );
+    return this._worldVelocity;
+  }
+
+  public applyWorldDeltaVelocity(deltaVelocity: THREE.Vector3) {
+    deltaVelocity.applyEuler(
+      new THREE.Euler(0, -this.controls.object.rotation.y, 0)
+    );
+    this.velocity.add(deltaVelocity);
+  }
+
+  public setOnGround(onGround: boolean) {
+    this.onGround = onGround;
+  }
+
   public update(delta: number) {
     if (!this.isActive) return;
     this.velocity.x = this.input.x;
     this.velocity.z = this.input.z;
-    this.velocity.y -= this._params.gravity;
-    this.velocity.multiplyScalar(delta);
-    this.velocity.copy(this.physics.getMaxVelocity(this.velocity));
-    this.controls.moveRight(this.velocity.x);
-    this.controls.moveForward(this.velocity.z);
-    this.position.y += this.velocity.y;
+    this.velocity.y -= this._params.gravity * delta;
+    this.controls.moveRight(this.velocity.x * delta);
+    this.controls.moveForward(this.velocity.z * delta);
+    this.position.y += this.velocity.y * delta;
+    this.physics.detectCollisions();
     if (this.boundsHelper) {
       this.boundsHelper.position.copy(this.position);
       this.boundsHelper.position.y -= this._params.height / 2;
