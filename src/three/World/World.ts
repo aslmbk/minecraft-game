@@ -56,22 +56,23 @@ export class World extends THREE.Group {
       shader.fragmentShader = shader.fragmentShader.replace(
         /* glsl */ `#include <map_fragment>`,
         /* glsl */ `#include <map_fragment>
-        if (vBlockType == ${blocks.grass.id}.0) {
+        int blockType = int(round(vBlockType));
+        if (blockType == ${blocks.grass.id}) {
           if (dot(vObjectNormal, vec3(0.0, 1.0, 0.0)) > 0.0) {
-            diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 1.0));
+            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 1));
           } else if (dot(vObjectNormal, vec3(0.0, -1.0, 0.0)) > 0.0) {
-            diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 3.0));
+            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 3));
           } else {
-            diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 2.0));
+            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 2));
           }
-        } else if (vBlockType == ${blocks.dirt.id}.0) {
-          diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 3.0));
-        } else if (vBlockType == ${blocks.stone.id}.0) {
-          diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 0.0));
-        } else if (vBlockType == ${blocks.coal.id}.0) {
-          diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 4.0));
-        } else if (vBlockType == ${blocks.iron.id}.0) {
-          diffuseColor *= texture2D(uTextureAtlas, vec3(vUv, 5.0));
+        } else if (blockType == ${blocks.dirt.id}) {
+          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 3));
+        } else if (blockType == ${blocks.stone.id}) {
+          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 0));
+        } else if (blockType == ${blocks.coal.id}) {
+          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 4));
+        } else if (blockType == ${blocks.iron.id}) {
+          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 5));
         }
         `
       );
