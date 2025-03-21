@@ -32,8 +32,12 @@ export class Stats {
     });
   }
 
+  private get isDebugMode() {
+    return location.hash.indexOf("debug") !== -1;
+  }
+
   public activate(type: StatsType = "1") {
-    if (location.hash.indexOf("debug") === -1) return;
+    if (!this.isDebugMode) return;
     this.active = true;
     this.type = type;
     if (this.type === "1") {
@@ -44,6 +48,7 @@ export class Stats {
   }
 
   public deactivate() {
+    if (!this.isDebugMode) return;
     this.active = false;
     if (this.type === "1") {
       document.body.removeChild(this.statsJS.dom);

@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { blocks, blockTextures } from "./Blocks";
 import { Terrain, TerrainParams } from "./Terrain";
 import { Loader } from "../Engine/Loader";
-
 export type WorldParams = TerrainParams;
 
 export class World extends THREE.Group {
@@ -13,15 +12,15 @@ export class World extends THREE.Group {
   public terrain: Terrain;
   private loader: Loader;
 
-  constructor(params: WorldParams) {
+  constructor(params: WorldParams, loader: Loader) {
     super();
     this.params = params;
+    this.loader = loader;
     this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
     this.blockMaterial = new THREE.MeshLambertMaterial({
       color: 0xffffff,
     });
 
-    this.loader = new Loader();
     this.blockMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.uTextureAtlas = new THREE.Uniform(null);
       this.blockMaterialUniforms = shader.uniforms;

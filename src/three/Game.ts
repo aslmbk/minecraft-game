@@ -40,7 +40,7 @@ export class Game extends Engine {
     this.stats.activate("2");
 
     this.lights = new Lights();
-    this.world = new World(this.config.worldParams);
+    this.world = new World(this.config.worldParams, this.loader);
     this.player = new Player(
       {
         controls: this.pointerLockControls,

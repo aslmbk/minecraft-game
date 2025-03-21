@@ -1,4 +1,4 @@
-import { Events } from "./Events";
+import { Events } from "./utils/Events";
 import { Engine } from "./Engine";
 
 export class Viewport {
