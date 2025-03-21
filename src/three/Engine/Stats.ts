@@ -1,29 +1,54 @@
 import StatsJS from "stats.js";
+import StatsGL from "stats-gl";
 import { Engine } from "./Engine";
 
+type StatsType = "1" | "2";
+
 export class Stats {
-  private stats: StatsJS;
+  private statsJS: StatsJS;
+  private statsGL: StatsGL;
   private active = true;
+  private type: StatsType = "1";
   private engine: Engine;
 
   constructor() {
     this.engine = Engine.getInstance();
-    this.stats = new StatsJS();
+    this.statsJS = new StatsJS();
+    this.statsGL = new StatsGL({
+      horizontal: false,
+      trackCPT: true,
+      trackGPU: true,
+      trackHz: true,
+    });
 
     this.engine.time.events.on("tick", () => {
       if (this.active) {
-        this.stats.update();
+        if (this.type === "1") {
+          this.statsJS.update();
+        } else {
+          this.statsGL.update();
+        }
       }
     });
   }
 
-  public activate() {
+  public activate(type: StatsType = "1") {
+    if (location.hash.indexOf("debug") === -1) return;
     this.active = true;
-    document.body.appendChild(this.stats.dom);
+    this.type = type;
+    if (this.type === "1") {
+      document.body.appendChild(this.statsJS.dom);
+    } else {
+      document.body.appendChild(this.statsGL.dom);
+    }
   }
 
   public deactivate() {
     this.active = false;
-    document.body.removeChild(this.stats.dom);
+    if (this.type === "1") {
+      document.body.removeChild(this.statsJS.dom);
+    } else {
+      document.body.removeChild(this.statsGL.dom);
+    }
   }
 }

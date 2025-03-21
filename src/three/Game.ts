@@ -37,7 +37,7 @@ export class Game extends Engine {
     this.renderer.shadowMap.enabled = true;
     this.view.position.set(32, 16, 32);
     this.pointerLockCamera.position.set(32, 16, 32);
-    this.stats.activate();
+    this.stats.activate("2");
 
     this.lights = new Lights();
     this.world = new World(this.config.worldParams);
