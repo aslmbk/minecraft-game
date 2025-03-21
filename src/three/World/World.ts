@@ -127,20 +127,12 @@ export class World extends THREE.Group {
   }
 
   private loadTextures() {
-    const textureAtlas = this.loader.loadTextureAtlas({
-      name: "blocks",
-      urls: blockTextures,
+    this.loader.loadTextureAtlas(blockTextures).then((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      this.blockMaterialUniforms!.uTextureAtlas.value = texture;
     });
-
-    textureAtlas.onLoad = () => {
-      const texture = textureAtlas.Info["blocks"].atlas;
-      if (texture) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
-        this.blockMaterialUniforms!.uTextureAtlas.value = texture;
-      }
-    };
   }
 
   public setParams(params: WorldParams) {

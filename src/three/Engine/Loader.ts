@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTF, GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { TextureAtlas } from "./utils/TextureAtlas";
+
 type GLTFLoaderOptions = {
   url: string;
   onLoad: (gltf: GLTF) => void;
@@ -16,11 +17,6 @@ type TextureLoaderOptions = {
   onError?: (err: unknown) => void;
 };
 
-type TextureAtlasOptions = {
-  name: string;
-  urls: string[];
-};
-
 export class Loader {
   private gltfLoader: GLTFLoader;
   private textureLoader: THREE.TextureLoader;
@@ -33,7 +29,7 @@ export class Loader {
     this.gltfLoader.setDRACOLoader(dracoLoader);
 
     this.textureLoader = new THREE.TextureLoader();
-    this.textureAtlas = new TextureAtlas();
+    this.textureAtlas = new TextureAtlas(this.textureLoader);
   }
 
   public loadGLTF(options: GLTFLoaderOptions) {
@@ -66,17 +62,7 @@ export class Loader {
     return this.textureLoader.loadAsync(options.url, options.onProgress);
   }
 
-  public loadTextureAtlas(options: TextureAtlasOptions) {
-    this.textureAtlas.Load(options.name, options.urls);
-    // Using exmaple
-    // this.textureAtlas.Load(name, [url1, url2, url3]);
-    // this.textureAtlas.onLoad = () => {
-    //   const texture = this.textureAtlas.Info[name].atlas;
-    //   texture.colorSpace = THREE.SRGBColorSpace;
-    //   texture.minFilter = THREE.NearestFilter;
-    //   texture.magFilter = THREE.NearestFilter;
-    //   ... do something with the texture
-    // };
-    return this.textureAtlas;
+  public loadTextureAtlas(urls: string[]) {
+    return this.textureAtlas.load(urls);
   }
 }

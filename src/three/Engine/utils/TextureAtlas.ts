@@ -1,125 +1,70 @@
 import * as THREE from "three";
 
-interface ImageData {
-  width: number;
-  height: number;
-  data: Uint8ClampedArray;
-}
-
-type TextureLoader = () => ImageData;
-
-interface TextureInfo {
-  textures: TextureLoader[];
-  atlas?: THREE.DataArrayTexture;
-}
-
-interface TextureDictionary {
-  [key: string]: TextureInfo;
-}
-
-function _GetImageData(image: HTMLImageElement): ImageData {
-  const canvas = document.createElement("canvas");
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const context = canvas.getContext("2d")!;
-  context.translate(0, image.height);
-  context.scale(1, -1);
-  context.drawImage(image, 0, 0);
-  return context.getImageData(0, 0, image.width, image.height);
-}
-
 export class TextureAtlas {
-  private manager_: THREE.LoadingManager;
-  private loader_: THREE.TextureLoader;
-  private textures_: TextureDictionary;
-  public onLoad: () => void;
+  private loader: THREE.TextureLoader;
 
-  constructor() {
-    this.manager_ = new THREE.LoadingManager();
-    this.loader_ = new THREE.TextureLoader(this.manager_);
-    this.textures_ = {};
-    this.manager_.onLoad = () => {
-      this.onLoad_();
-    };
-    this.onLoad = () => {};
+  constructor(textureLoader?: THREE.TextureLoader) {
+    this.loader = textureLoader ?? new THREE.TextureLoader();
   }
 
-  public Load(atlas: string, names: (string | ImageData)[]): void {
-    this.loadAtlas_(atlas, names);
-  }
+  public async load(texturePaths: string[]): Promise<THREE.DataArrayTexture> {
+    const loadedTextures = await Promise.all(
+      texturePaths.map((path) => {
+        return this.loadTexture(path);
+      })
+    );
 
-  public get Info(): TextureDictionary {
-    return this.textures_;
-  }
+    const width = loadedTextures[0].image.width;
+    const height = loadedTextures[0].image.height;
+    const depth = loadedTextures.length;
 
-  private onLoad_(): void {
-    for (const k in this.textures_) {
-      let X: number | null = null;
-      let Y: number | null = null;
-      const atlas = this.textures_[k];
-      let data: Uint8Array | null = null;
+    const size = width * height;
+    const data = new Uint8Array(4 * size * depth);
 
-      for (let t = 0; t < atlas.textures.length; t++) {
-        const loader = atlas.textures[t];
-        const curData = loader();
-        const h = curData.height;
-        const w = curData.width;
+    for (let i = 0; i < depth; i++) {
+      const img = loadedTextures[i].image;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(img, 0, 0);
+      const imgData = context.getImageData(0, 0, width, height).data;
 
-        if (X === null) {
-          X = w;
-          Y = h;
-          data = new Uint8Array(atlas.textures.length * 4 * X * Y);
+      // data.set(imgData, i * size * 4);
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const srcY = height - 1 - y;
+          const srcPos = (srcY * width + x) * 4;
+          const dstPos = (i * size + y * width + x) * 4;
+
+          data[dstPos] = imgData[srcPos];
+          data[dstPos + 1] = imgData[srcPos + 1];
+          data[dstPos + 2] = imgData[srcPos + 2];
+          data[dstPos + 3] = imgData[srcPos + 3];
         }
-
-        if (w !== X || h !== Y) {
-          console.error("Texture dimensions do not match");
-          return;
-        }
-
-        const offset = t * (4 * w * h);
-        data!.set(curData.data, offset);
       }
+    }
 
-      const diffuse = new THREE.DataArrayTexture(
-        data!,
-        X!,
-        Y!,
-        atlas.textures.length
+    const texture = new THREE.DataArrayTexture(data, width, height, depth);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.needsUpdate = true;
+
+    return texture;
+  }
+
+  private loadTexture(path: string): Promise<THREE.Texture> {
+    return new Promise((resolve, reject) => {
+      this.loader.load(
+        path,
+        (texture) => resolve(texture),
+        undefined,
+        (err) => reject(err)
       );
-
-      diffuse.format = THREE.RGBAFormat;
-      diffuse.type = THREE.UnsignedByteType;
-      diffuse.minFilter = THREE.LinearMipmapLinearFilter;
-      diffuse.magFilter = THREE.LinearFilter;
-      diffuse.wrapS = THREE.ClampToEdgeWrapping;
-      diffuse.wrapT = THREE.ClampToEdgeWrapping;
-      // diffuse.wrapS = THREE.RepeatWrapping;
-      // diffuse.wrapT = THREE.RepeatWrapping;
-      diffuse.generateMipmaps = true;
-      diffuse.needsUpdate = true;
-
-      atlas.atlas = diffuse;
-    }
-
-    this.onLoad();
-  }
-
-  private loadType_(t: string | ImageData): TextureLoader {
-    if (typeof t === "string") {
-      const texture = this.loader_.load(t);
-      return () => {
-        return _GetImageData(texture.image);
-      };
-    } else {
-      return () => {
-        return t;
-      };
-    }
-  }
-
-  private loadAtlas_(atlas: string, names: (string | ImageData)[]): void {
-    this.textures_[atlas] = {
-      textures: names.map((n) => this.loadType_(n)),
-    };
+    });
   }
 }
