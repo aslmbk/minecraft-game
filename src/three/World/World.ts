@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { blocks } from "./Blocks";
+import { blocks, blockTextures } from "./Blocks";
 import { Terrain, TerrainParams } from "./Terrain";
 import { Loader } from "../Engine/Loader";
 
@@ -32,15 +32,15 @@ export class World extends THREE.Group {
       shader.vertexShader = shader.vertexShader.replace(
         /* glsl */ `#define LAMBERT`,
         /* glsl */ `#define LAMBERT
-        attribute float blockType;
-        varying float vBlockType;
+        attribute float textureID;
+        varying float vTextureID;
         varying vec3 vObjectNormal;
         `
       );
       shader.vertexShader = shader.vertexShader.replace(
         /* glsl */ `vViewPosition = - mvPosition.xyz;`,
         /* glsl */ `vViewPosition = - mvPosition.xyz;
-        vBlockType = blockType;
+        vTextureID = textureID;
         vObjectNormal = normal;
         `
       );
@@ -49,31 +49,24 @@ export class World extends THREE.Group {
         /* glsl */ `#define LAMBERT`,
         /* glsl */ `#define LAMBERT
         uniform sampler2DArray uTextureAtlas;
-        varying float vBlockType;
+        varying float vTextureID;
         varying vec3 vObjectNormal;
         `
       );
       shader.fragmentShader = shader.fragmentShader.replace(
         /* glsl */ `#include <map_fragment>`,
         /* glsl */ `#include <map_fragment>
-        int blockType = int(round(vBlockType));
-        if (blockType == ${blocks.grass.id}) {
-          if (dot(vObjectNormal, vec3(0.0, 1.0, 0.0)) > 0.0) {
-            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 1));
-          } else if (dot(vObjectNormal, vec3(0.0, -1.0, 0.0)) > 0.0) {
-            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 3));
-          } else {
-            diffuseColor *= texture(uTextureAtlas, vec3(vUv, 2));
+        int textureID = int(round(vTextureID));
+        vec3 nNormal = normalize(vObjectNormal);
+        vec4 blockColor = texture(uTextureAtlas, vec3(vUv, textureID));
+        if (textureID == ${blocks.grass.textureIndex}) {
+          if (dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5) {
+            blockColor = texture(uTextureAtlas, vec3(vUv, ${blocks.dirt.textureIndex}));
+          } else if (dot(nNormal, vec3(0.0, 1.0, 0.0)) < 0.5) {
+            blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
           }
-        } else if (blockType == ${blocks.dirt.id}) {
-          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 3));
-        } else if (blockType == ${blocks.stone.id}) {
-          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 0));
-        } else if (blockType == ${blocks.coal.id}) {
-          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 4));
-        } else if (blockType == ${blocks.iron.id}) {
-          diffuseColor *= texture(uTextureAtlas, vec3(vUv, 5));
         }
+        diffuseColor *= blockColor;
         `
       );
       this.loadTextures();
@@ -102,11 +95,11 @@ export class World extends THREE.Group {
     instances.castShadow = true;
     instances.receiveShadow = true;
 
-    const blockTypeAttribute = new THREE.InstancedBufferAttribute(
+    const textureIDAttribute = new THREE.InstancedBufferAttribute(
       new Float32Array(maxCount),
       1
     );
-    this.blockGeometry.setAttribute("blockType", blockTypeAttribute);
+    this.blockGeometry.setAttribute("textureID", textureIDAttribute);
 
     const blocksArray = Object.values(blocks);
     const matrix = new THREE.Matrix4();
@@ -124,7 +117,7 @@ export class World extends THREE.Group {
           const instanceId = instances.count++;
           matrix.setPosition(x, y, z);
           instances.setMatrixAt(instanceId, matrix);
-          blockTypeAttribute.setX(instanceId, block.id);
+          textureIDAttribute.setX(instanceId, block.textureIndex);
           this.terrain.setBlockInstanceId(x, y, z, instanceId);
         }
       }
@@ -136,14 +129,7 @@ export class World extends THREE.Group {
   private loadTextures() {
     const textureAtlas = this.loader.loadTextureAtlas({
       name: "blocks",
-      urls: [
-        "textures/stone.png",
-        "textures/grass.png",
-        "textures/grass_side.png",
-        "textures/dirt.png",
-        "textures/coal_ore.png",
-        "textures/iron_ore.png",
-      ],
+      urls: blockTextures,
     });
 
     textureAtlas.onLoad = () => {
