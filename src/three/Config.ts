@@ -7,7 +7,7 @@ export class Config {
   playerConfig: PlayerConfig = {
     moveSpeed: 10,
     radius: 0.5,
-    height: 1.75,
+    height: 2,
     gravity: 32,
     jumpSpeed: 10,
   };

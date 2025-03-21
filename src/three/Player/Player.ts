@@ -136,6 +136,20 @@ export class Player {
   }
 
   public setParams(playerConfig: PlayerConfig) {
+    if (
+      this._params.height !== playerConfig.height ||
+      this._params.radius !== playerConfig.radius
+    ) {
+      this.position.y += playerConfig.height - this._params.height;
+      if (this.boundsHelper) {
+        this.boundsHelper.geometry.dispose();
+        this.boundsHelper.geometry = new THREE.CylinderGeometry(
+          playerConfig.radius,
+          playerConfig.radius,
+          playerConfig.height
+        );
+      }
+    }
     this._params = playerConfig;
   }
 
