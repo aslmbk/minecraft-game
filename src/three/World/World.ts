@@ -1,128 +1,49 @@
 import * as THREE from "three";
-import { blocks, blockTextures } from "./Blocks";
+import { blockMaterialUniforms, blockTextures } from "./Blocks";
 import { Terrain, TerrainParams } from "./Terrain";
 import { Loader } from "../Engine/Loader";
-export type WorldParams = TerrainParams;
+
+export type WorldParams = TerrainParams & {
+  chunkDistance: number;
+};
 
 export class World extends THREE.Group {
-  private blockGeometry: THREE.BoxGeometry;
-  private blockMaterial: THREE.MeshLambertMaterial;
-  private blockMaterialUniforms: Record<string, THREE.IUniform> | null = null;
   private params: WorldParams;
-  public terrain: Terrain;
+  public chunks: [Terrain, THREE.Object3D][] = [];
   private loader: Loader;
 
   constructor(params: WorldParams, loader: Loader) {
     super();
     this.params = params;
     this.loader = loader;
-    this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
-    this.blockMaterial = new THREE.MeshLambertMaterial({
-      color: 0xffffff,
-    });
-
-    this.blockMaterial.onBeforeCompile = (shader) => {
-      shader.uniforms.uTextureAtlas = new THREE.Uniform(null);
-      this.blockMaterialUniforms = shader.uniforms;
-
-      shader.defines ??= {};
-      shader.defines.USE_UV = true;
-
-      shader.vertexShader = shader.vertexShader.replace(
-        /* glsl */ `#define LAMBERT`,
-        /* glsl */ `#define LAMBERT
-        attribute float textureID;
-        varying float vTextureID;
-        varying vec3 vObjectNormal;
-        `
-      );
-      shader.vertexShader = shader.vertexShader.replace(
-        /* glsl */ `vViewPosition = - mvPosition.xyz;`,
-        /* glsl */ `vViewPosition = - mvPosition.xyz;
-        vTextureID = textureID;
-        vObjectNormal = normal;
-        `
-      );
-
-      shader.fragmentShader = shader.fragmentShader.replace(
-        /* glsl */ `#define LAMBERT`,
-        /* glsl */ `#define LAMBERT
-        uniform sampler2DArray uTextureAtlas;
-        varying float vTextureID;
-        varying vec3 vObjectNormal;
-        `
-      );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        /* glsl */ `#include <map_fragment>`,
-        /* glsl */ `#include <map_fragment>
-        int textureID = int(round(vTextureID));
-        vec3 nNormal = normalize(vObjectNormal);
-        vec4 blockColor = texture(uTextureAtlas, vec3(vUv, textureID));
-        if (textureID == ${blocks.grass.textureIndex}) {
-          if (dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5) {
-            blockColor = texture(uTextureAtlas, vec3(vUv, ${blocks.dirt.textureIndex}));
-          } else if (dot(nNormal, vec3(0.0, 1.0, 0.0)) < 0.5) {
-            blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
-          }
-        }
-        diffuseColor *= blockColor;
-        `
-      );
-      this.loadTextures();
-    };
-    this.terrain = new Terrain(params);
+    this.loadTextures();
   }
 
   public generate() {
-    this.terrain.generate();
-    this.generateMeshes();
-  }
-
-  private generateMeshes() {
-    this.clear();
-
-    const maxCount =
-      this.params.world.width *
-      this.params.world.height *
-      this.params.world.width;
-    const instances = new THREE.InstancedMesh(
-      this.blockGeometry,
-      this.blockMaterial,
-      maxCount
-    );
-    instances.count = 0;
-    instances.castShadow = true;
-    instances.receiveShadow = true;
-
-    const textureIDAttribute = new THREE.InstancedBufferAttribute(
-      new Float32Array(maxCount),
-      1
-    );
-    this.blockGeometry.setAttribute("textureID", textureIDAttribute);
-
-    const blocksArray = Object.values(blocks);
-    const matrix = new THREE.Matrix4();
-    for (let x = 0; x < this.params.world.width; x++) {
-      for (let y = 0; y < this.params.world.height; y++) {
-        for (let z = 0; z < this.params.world.width; z++) {
-          const blockId = this.terrain.getBlock(x, y, z)?.id;
-          if (
-            blockId === blocks.empty.id ||
-            this.terrain.isBlockObscured(x, y, z)
-          ) {
-            continue;
-          }
-          const block = blocksArray.find((block) => block.id === blockId)!;
-          const instanceId = instances.count++;
-          matrix.setPosition(x, y, z);
-          instances.setMatrixAt(instanceId, matrix);
-          textureIDAttribute.setX(instanceId, block.textureIndex);
-          this.terrain.setBlockInstanceId(x, y, z, instanceId);
-        }
+    this.clearWorld();
+    for (
+      let x = -this.params.chunkDistance;
+      x <= this.params.chunkDistance;
+      x++
+    ) {
+      for (
+        let z = -this.params.chunkDistance;
+        z <= this.params.chunkDistance;
+        z++
+      ) {
+        const chunk = new Terrain(this.params);
+        const position = {
+          x: x * this.params.world.width,
+          y: 0,
+          z: z * this.params.world.width,
+        };
+        const instance = chunk.generate(position);
+        instance.position.copy(position);
+        instance.userData = { x, z };
+        this.add(instance);
+        this.chunks.push([chunk, instance]);
       }
     }
-
-    this.add(instances);
   }
 
   private loadTextures() {
@@ -130,12 +51,50 @@ export class World extends THREE.Group {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
-      this.blockMaterialUniforms!.uTextureAtlas.value = texture;
+      blockMaterialUniforms.uTextureAtlas.value = texture;
     });
   }
 
   public setParams(params: WorldParams) {
     this.params = params;
-    this.terrain.setParams(params);
+    this.chunks.forEach((chunk) => chunk[0].setParams(params));
+  }
+
+  public clearWorld() {
+    this.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+      }
+    });
+    this.clear();
+    this.chunks = [];
+  }
+
+  private worldCoordsToChunkCoords(x: number, y: number, z: number) {
+    const chunkCoords = {
+      x: Math.floor(x / this.params.world.width),
+      z: Math.floor(z / this.params.world.width),
+    };
+    const blockCoords = {
+      x: x - this.params.world.width * chunkCoords.x,
+      y,
+      z: z - this.params.world.width * chunkCoords.z,
+    };
+    return { chunkCoords, blockCoords };
+  }
+
+  private getChunk(x: number, z: number) {
+    return this.chunks.find((chunk) => {
+      return chunk[1].userData.x === x && chunk[1].userData.z === z;
+    });
+  }
+
+  public getBlock(x: number, y: number, z: number) {
+    const { chunkCoords, blockCoords } = this.worldCoordsToChunkCoords(x, y, z);
+    const chunk = this.getChunk(chunkCoords.x, chunkCoords.z);
+    if (!chunk) {
+      return null;
+    }
+    return chunk[0].getBlock(blockCoords.x, blockCoords.y, blockCoords.z);
   }
 }

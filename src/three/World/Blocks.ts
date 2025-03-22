@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 type Block<T extends string> = {
   id: number;
   name: T;
@@ -66,4 +68,65 @@ export const blocks: BlocksInterface = {
     color: 0x806060,
     textureIndex: 5,
   },
+};
+
+export const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+export const blockMaterial = new THREE.MeshLambertMaterial({
+  color: 0xffffff,
+});
+export const blockMaterialUniforms = {
+  uTextureAtlas: new THREE.Uniform<THREE.Texture>(
+    null as unknown as THREE.Texture
+  ),
+};
+
+blockMaterial.onBeforeCompile = (shader) => {
+  shader.uniforms = {
+    ...shader.uniforms,
+    ...blockMaterialUniforms,
+  };
+
+  shader.defines ??= {};
+  shader.defines.USE_UV = true;
+
+  shader.vertexShader = shader.vertexShader.replace(
+    /* glsl */ `#define LAMBERT`,
+    /* glsl */ `#define LAMBERT
+    attribute float textureID;
+    varying float vTextureID;
+    varying vec3 vObjectNormal;
+    `
+  );
+  shader.vertexShader = shader.vertexShader.replace(
+    /* glsl */ `vViewPosition = - mvPosition.xyz;`,
+    /* glsl */ `vViewPosition = - mvPosition.xyz;
+    vTextureID = textureID;
+    vObjectNormal = normal;
+    `
+  );
+
+  shader.fragmentShader = shader.fragmentShader.replace(
+    /* glsl */ `#define LAMBERT`,
+    /* glsl */ `#define LAMBERT
+    uniform sampler2DArray uTextureAtlas;
+    varying float vTextureID;
+    varying vec3 vObjectNormal;
+    `
+  );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    /* glsl */ `#include <map_fragment>`,
+    /* glsl */ `#include <map_fragment>
+    int textureID = int(round(vTextureID));
+    vec3 nNormal = normalize(vObjectNormal);
+    vec4 blockColor = texture(uTextureAtlas, vec3(vUv, textureID));
+    if (textureID == ${blocks.grass.textureIndex}) {
+      if (dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5) {
+        blockColor = texture(uTextureAtlas, vec3(vUv, ${blocks.dirt.textureIndex}));
+      } else if (dot(nNormal, vec3(0.0, 1.0, 0.0)) < 0.5) {
+        blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
+      }
+    }
+    diffuseColor *= blockColor;
+    `
+  );
 };

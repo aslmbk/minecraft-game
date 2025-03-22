@@ -1,6 +1,7 @@
-import { blocks } from "./Blocks";
+import { blocks, blockGeometry, blockMaterial } from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
+import * as THREE from "three";
 
 export type TerrainType = {
   id: number;
@@ -34,10 +35,16 @@ export type TerrainParams = {
   };
 };
 
+type TerrainPosition = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export class Terrain {
-  private rng: RNG;
+  public rng: RNG;
   public data: TerrainType[][][] = [];
-  private params: TerrainParams;
+  public params: TerrainParams;
 
   constructor(params: TerrainParams) {
     this.params = params;
@@ -45,11 +52,12 @@ export class Terrain {
     this.data = [];
   }
 
-  public generate() {
+  public generate(position: TerrainPosition = { x: 0, y: 0, z: 0 }) {
     this.rng = new RNG(this.params.seed);
     this.initialize();
-    this.generateResources();
-    this.generateTerrain();
+    this.generateResources(position);
+    this.generateTerrain(position);
+    return this.generateMeshes();
   }
 
   private initialize() {
@@ -70,7 +78,7 @@ export class Terrain {
     }
   }
 
-  private generateResources() {
+  private generateResources(position: TerrainPosition) {
     const resources = [
       {
         resource: blocks.stone,
@@ -94,9 +102,9 @@ export class Terrain {
         for (let z = 0; z < this.params.world.width; z++) {
           for (const resource of resources) {
             const value = noiseGenerator.noise3d(
-              x / resource.scale.x,
-              y / resource.scale.y,
-              z / resource.scale.z
+              (x + position.x) / resource.scale.x,
+              (y + position.y) / resource.scale.y,
+              (z + position.z) / resource.scale.z
             );
             if (value > resource.threshold) {
               this.setBlockId(x, y, z, resource.resource.id);
@@ -107,13 +115,13 @@ export class Terrain {
     }
   }
 
-  private generateTerrain() {
+  private generateTerrain(position: TerrainPosition) {
     const noiseGenerator = new SimplexNoise(this.rng);
     for (let x = 0; x < this.params.world.width; x++) {
       for (let z = 0; z < this.params.world.width; z++) {
         const value = noiseGenerator.noise(
-          x / this.params.terrain.scale,
-          z / this.params.terrain.scale
+          (x + position.x) / this.params.terrain.scale,
+          (z + position.z) / this.params.terrain.scale
         );
         const scaledNoise =
           this.params.terrain.offset + this.params.terrain.magnitude * value;
@@ -133,6 +141,45 @@ export class Terrain {
         }
       }
     }
+  }
+
+  private generateMeshes() {
+    const geometry = blockGeometry.clone();
+    const maxCount =
+      this.params.world.width *
+      this.params.world.height *
+      this.params.world.width;
+    const instance = new THREE.InstancedMesh(geometry, blockMaterial, maxCount);
+    instance.count = 0;
+    instance.castShadow = true;
+    instance.receiveShadow = true;
+
+    const textureIDAttribute = new THREE.InstancedBufferAttribute(
+      new Float32Array(maxCount),
+      1
+    );
+    geometry.setAttribute("textureID", textureIDAttribute);
+
+    const blocksArray = Object.values(blocks);
+    const matrix = new THREE.Matrix4();
+    for (let x = 0; x < this.params.world.width; x++) {
+      for (let y = 0; y < this.params.world.height; y++) {
+        for (let z = 0; z < this.params.world.width; z++) {
+          const blockId = this.getBlock(x, y, z)?.id;
+          if (blockId === blocks.empty.id || this.isBlockObscured(x, y, z)) {
+            continue;
+          }
+          const block = blocksArray.find((block) => block.id === blockId)!;
+          const instanceId = instance.count++;
+          matrix.setPosition(x, y, z);
+          instance.setMatrixAt(instanceId, matrix);
+          textureIDAttribute.setX(instanceId, block.textureIndex);
+          this.setBlockInstanceId(x, y, z, instanceId);
+        }
+      }
+    }
+
+    return instance;
   }
 
   public getBlock(x: number, y: number, z: number) {

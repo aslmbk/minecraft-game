@@ -58,6 +58,9 @@ export class DebugController {
         game.world.generate();
       });
 
+    paramsFolder.addBinding(game.config.worldParams, "chunkDistance", {
+      label: "chunk distance",
+    });
     paramsFolder.addBinding(game.config.worldParams, "seed", {
       label: "rng seed",
     });
