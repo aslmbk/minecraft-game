@@ -138,10 +138,4 @@ export class World extends THREE.Group {
     this.params = params;
     this.terrain.setParams(params);
   }
-
-  public dispose() {
-    this.blockGeometry.dispose();
-    this.blockMaterial.dispose();
-    this.clear();
-  }
 }

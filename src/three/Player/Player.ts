@@ -17,8 +17,6 @@ type PlayerParams = {
 };
 
 export class Player {
-  private onKeyDown = this.keyDownHandler.bind(this);
-  private onKeyUp = this.keyUpHandler.bind(this);
   private controls: PointerLockControls;
 
   private _params: PlayerConfig;
@@ -47,8 +45,8 @@ export class Player {
     this.controls.lock();
     this._params = params.playerConfig;
     this.physics = new Physics(world, this);
-    window.addEventListener("keydown", this.onKeyDown);
-    window.addEventListener("keyup", this.onKeyUp);
+    window.addEventListener("keydown", this.keyDownHandler);
+    window.addEventListener("keyup", this.keyUpHandler);
     this._nextPosition.copy(this.controls.object.position);
   }
 
@@ -166,10 +164,5 @@ export class Player {
     });
     this.boundsHelper = new THREE.Mesh(geometry, material);
     return this.boundsHelper;
-  }
-
-  public dispose() {
-    window.removeEventListener("keydown", this.onKeyDown);
-    window.removeEventListener("keyup", this.onKeyUp);
   }
 }

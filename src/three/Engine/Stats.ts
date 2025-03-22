@@ -1,6 +1,5 @@
 import StatsJS from "stats.js";
 import StatsGL from "stats-gl";
-import { Engine } from "./Engine";
 
 type StatsType = "1" | "2";
 
@@ -9,10 +8,8 @@ export class Stats {
   private statsGL: StatsGL;
   private active = true;
   private type: StatsType = "1";
-  private engine: Engine;
 
   constructor() {
-    this.engine = Engine.getInstance();
     this.statsJS = new StatsJS();
     this.statsGL = new StatsGL({
       horizontal: false,
@@ -20,20 +17,19 @@ export class Stats {
       trackGPU: true,
       trackHz: true,
     });
-
-    this.engine.time.events.on("tick", () => {
-      if (this.active) {
-        if (this.type === "1") {
-          this.statsJS.update();
-        } else {
-          this.statsGL.update();
-        }
-      }
-    });
   }
 
   private get isDebugMode() {
     return location.hash.indexOf("debug") !== -1;
+  }
+
+  public update() {
+    if (!this.isDebugMode || !this.active) return;
+    if (this.type === "1") {
+      this.statsJS.update();
+    } else {
+      this.statsGL.update();
+    }
   }
 
   public activate(type: StatsType = "1") {

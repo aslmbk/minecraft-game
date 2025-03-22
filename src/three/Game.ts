@@ -98,12 +98,4 @@ export class Game extends Engine {
     });
     this.scene.add(ambientLight);
   }
-
-  public dispose() {
-    this.stats.deactivate();
-    this.player.dispose();
-    this.debug.children.forEach((child) => child.dispose());
-    this.scene.dispose();
-    this.world.dispose();
-  }
 }

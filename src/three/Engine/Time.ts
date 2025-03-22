@@ -41,10 +41,4 @@ export class Time extends Timer {
 
     this.animationFrameId = requestAnimationFrame(() => this.tick());
   }
-
-  public dispose() {
-    super.dispose();
-    this.stop();
-    return this;
-  }
 }
