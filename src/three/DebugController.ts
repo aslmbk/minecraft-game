@@ -55,7 +55,7 @@ export class DebugController {
       })
       .on("change", () => {
         game.world.setParams(game.config.worldParams);
-        game.world.generate();
+        game.world.generate({ force: true });
       });
 
     paramsFolder.addBinding(game.config.worldParams, "chunkDistance", {

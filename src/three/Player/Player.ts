@@ -17,6 +17,8 @@ type PlayerParams = {
 };
 
 export class Player {
+  private frameRate = 1 / 120;
+  private deltaTime = 0;
   private controls: PointerLockControls;
 
   private _params: PlayerConfig;
@@ -110,27 +112,29 @@ export class Player {
     this.onGround = onGround;
   }
 
-  public update(delta: number) {
+  public update(dt: number) {
+    this.deltaTime += dt;
+    if (!this.isActive || this.deltaTime < this.frameRate) return;
     this.controls.object.position.lerp(
       this._nextPosition,
-      Math.min(1, this.physics.lerpDt + delta * 10)
+      Math.min(1, this.physics.lerpDt + this.frameRate * 10)
     );
-    if (!this.isActive) return;
     this.velocity.x = this.input.x;
     this.velocity.z = this.input.z;
-    this.velocity.y -= this._params.gravity * delta;
+    this.velocity.y -= this._params.gravity * this.frameRate;
     this.currentPositionTestVariable.copy(this.controls.object.position);
     this.controls.object.position.copy(this.position);
-    this.controls.moveRight(this.velocity.x * delta);
-    this.controls.moveForward(this.velocity.z * delta);
-    this.controls.object.position.y += this.velocity.y * delta;
+    this.controls.moveRight(this.velocity.x * this.frameRate);
+    this.controls.moveForward(this.velocity.z * this.frameRate);
+    this.controls.object.position.y += this.velocity.y * this.frameRate;
     this.position.copy(this.controls.object.position);
     this.controls.object.position.copy(this.currentPositionTestVariable);
-    this.physics.detectCollisions(delta);
+    this.physics.detectCollisions(this.frameRate);
     if (this.boundsHelper) {
       this.boundsHelper.position.copy(this.position);
       this.boundsHelper.position.y -= this._params.height / 2;
     }
+    this.deltaTime -= this.frameRate;
   }
 
   public setParams(playerConfig: PlayerConfig) {

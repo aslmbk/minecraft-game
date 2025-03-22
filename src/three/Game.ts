@@ -49,9 +49,8 @@ export class Game extends Engine {
       this.world
     );
 
-    this.createLights();
-    this.world.generate();
     this.scene.add(this.world);
+    this.scene.add(this.lights);
     // this.scene.add(this.player.createBoundsHelper());
 
     this.time.events.on("tick", ({ delta }) => {
@@ -64,6 +63,9 @@ export class Game extends Engine {
 
   public update(delta: number) {
     this.player.update(delta);
+    this.world.generate({ playerPosition: this.player.position });
+    this.controls.target.copy(this.player.position);
+    this.lights.update(this.player.position);
     this.pointerLockControls.update(delta);
     const camera = this.player.isActive ? this.pointerLockCamera : this.view;
     this.renderer.render(this.scene, camera);
@@ -72,30 +74,5 @@ export class Game extends Engine {
   public resize() {
     this.pointerLockCamera.aspect = this.viewport.ratio;
     this.pointerLockCamera.updateProjectionMatrix();
-  }
-
-  private createLights() {
-    const directionalLight = this.lights.createDirectionalLight({
-      color: "white",
-      intensity: 2,
-      position: new THREE.Vector3(40, 40, -40),
-    });
-    directionalLight.castShadow = true;
-    directionalLight.shadow.intensity = 0.9;
-    directionalLight.shadow.mapSize.set(2048, 2048);
-    directionalLight.shadow.radius = 8;
-    directionalLight.shadow.camera.near = 10;
-    directionalLight.shadow.camera.far = 110;
-    directionalLight.shadow.camera.left = -50;
-    directionalLight.shadow.camera.right = 50;
-    directionalLight.shadow.camera.top = 50;
-    directionalLight.shadow.camera.bottom = -50;
-    this.scene.add(directionalLight);
-
-    const ambientLight = this.lights.createAmbientLight({
-      color: "white",
-      intensity: 0.5,
-    });
-    this.scene.add(ambientLight);
   }
 }

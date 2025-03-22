@@ -1,29 +1,33 @@
 import * as THREE from "three";
 
-type DirectionalLight = {
-  color: THREE.ColorRepresentation;
-  intensity: number;
-  position: THREE.Vector3;
-};
+export class Lights extends THREE.Group {
+  private directionalLight: THREE.DirectionalLight;
+  private ambientLight: THREE.AmbientLight;
 
-type AmbientLight = {
-  color: THREE.ColorRepresentation;
-  intensity: number;
-};
+  constructor() {
+    super();
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    this.directionalLight.position.set(40, 40, -40);
+    this.directionalLight.castShadow = true;
+    this.directionalLight.shadow.intensity = 0.9;
+    this.directionalLight.shadow.mapSize.set(2048, 2048);
+    this.directionalLight.shadow.radius = 8;
+    this.directionalLight.shadow.camera.near = 10;
+    this.directionalLight.shadow.camera.far = 110;
+    this.directionalLight.shadow.camera.left = -50;
+    this.directionalLight.shadow.camera.right = 50;
+    this.directionalLight.shadow.camera.top = 50;
+    this.directionalLight.shadow.camera.bottom = -50;
+    this.add(this.directionalLight);
+    this.add(this.directionalLight.target);
 
-export class Lights {
-  public createDirectionalLight({
-    color = 0xffffff,
-    intensity = 1,
-    position = new THREE.Vector3(1, 1, 1),
-  }: DirectionalLight) {
-    const light = new THREE.DirectionalLight(color, intensity);
-    light.position.copy(position);
-    return light;
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.add(this.ambientLight);
   }
 
-  public createAmbientLight({ color = 0xffffff, intensity = 1 }: AmbientLight) {
-    const light = new THREE.AmbientLight(color, intensity);
-    return light;
+  public update(playerPosition: THREE.Vector3) {
+    this.directionalLight.position.copy(playerPosition);
+    this.directionalLight.position.add(new THREE.Vector3(40, 40, -40));
+    this.directionalLight.target.position.copy(playerPosition);
   }
 }
