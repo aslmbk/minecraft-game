@@ -45,8 +45,8 @@ export class Player {
     this.controls.lock();
     this._params = params.playerConfig;
     this.physics = new Physics(world, this);
-    window.addEventListener("keydown", this.keyDownHandler);
-    window.addEventListener("keyup", this.keyUpHandler);
+    window.addEventListener("keydown", this.keyDownHandler.bind(this));
+    window.addEventListener("keyup", this.keyUpHandler.bind(this));
     this._nextPosition.copy(this.controls.object.position);
   }
 
