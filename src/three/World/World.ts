@@ -71,7 +71,7 @@ export class World extends THREE.Group {
         return;
       }
       this.idleAdding.push(coords);
-      requestIdleCallback(() => {
+      Promise.resolve().then(() => {
         this.addChunk(coords);
         this.idleAdding = this.idleAdding.filter(
           (c) => c.x !== coords.x && c.z !== coords.z
@@ -137,8 +137,8 @@ export class World extends THREE.Group {
   }
 
   private deleteChunk(chunk: ChunkType) {
-    chunk[1].geometry.dispose();
     this.remove(chunk[1]);
+    chunk[1].geometry.dispose();
     this.chunks.splice(this.chunks.indexOf(chunk), 1);
   }
 }

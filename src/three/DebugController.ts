@@ -1,10 +1,15 @@
 import { Game } from "./Game";
-
+import {
+  colorSpaceOptions,
+  shadowMapTypeOptions,
+  toneMappingOptions,
+} from "./Engine/utils/constants";
 export class DebugController {
   constructor(game: Game) {
     this.createRendererFolder(game);
     this.createPlayerFolder(game);
     this.createParamsFolder(game);
+    this.createLightsFolder(game);
   }
 
   private createRendererFolder(game: Game) {
@@ -17,7 +22,30 @@ export class DebugController {
       .addBinding(game.config, "clearColor")
       .on("change", ({ value }) => {
         game.renderer.setClearColor(value);
+        if (game.scene.fog) game.scene.fog.color.set(value);
       });
+
+    rendererFolder.addBinding(game.renderer, "toneMapping", {
+      label: "tone mapping",
+      options: toneMappingOptions,
+    });
+
+    rendererFolder.addBinding(game.renderer, "toneMappingExposure", {
+      label: "tone mapping exposure",
+      min: 0,
+      max: 10,
+      step: 0.1,
+    });
+
+    rendererFolder.addBinding(game.renderer, "outputColorSpace", {
+      label: "color space",
+      options: colorSpaceOptions,
+    });
+
+    rendererFolder.addBinding(game.renderer.shadowMap, "type", {
+      label: "shadow map type",
+      options: shadowMapTypeOptions,
+    });
   }
 
   private createPlayerFolder(game: Game) {
@@ -97,5 +125,169 @@ export class DebugController {
     paramsFolder.addBinding(game.config.worldParams.blocks.iron, "threshold", {
       label: "iron threshold",
     });
+  }
+
+  private createLightsFolder(game: Game) {
+    const lightsFolder = game.debug.addFolder({
+      title: "lights",
+      expanded: false,
+    });
+
+    const ambientLightFolder = lightsFolder
+      .addFolder({
+        title: "ambient light",
+        expanded: false,
+      })
+      .on("change", () => {
+        console.log(game.config.lights.ambientLight);
+        game.lights.ambientLight.intensity =
+          game.config.lights.ambientLight.intensity;
+        game.lights.ambientLight.color.set(
+          game.config.lights.ambientLight.color
+        );
+      });
+
+    ambientLightFolder.addBinding(
+      game.config.lights.ambientLight,
+      "intensity",
+      {
+        label: "intensity",
+        min: 0,
+        max: 5,
+      }
+    );
+
+    ambientLightFolder.addBinding(game.config.lights.ambientLight, "color", {
+      label: "color",
+    });
+
+    const dirLightFolder = lightsFolder
+      .addFolder({
+        title: "directional light",
+        expanded: false,
+      })
+      .on("change", () => {
+        game.lights.directionalLight.intensity =
+          game.config.lights.directionalLight.intensity;
+        game.lights.directionalLight.color.set(
+          game.config.lights.directionalLight.color
+        );
+      });
+
+    dirLightFolder.addBinding(
+      game.config.lights.directionalLight,
+      "intensity",
+      {
+        label: "intensity",
+        min: 0,
+        max: 5,
+      }
+    );
+
+    dirLightFolder.addBinding(game.config.lights.directionalLight, "color", {
+      label: "color",
+    });
+
+    dirLightFolder.addBinding(game.config.lights.directionalLight, "position", {
+      label: "position",
+    });
+
+    dirLightFolder.addBinding(
+      game.lights.directionalLight.shadow,
+      "intensity",
+      {
+        label: "shadow intensity",
+        min: 0,
+        max: 1,
+      }
+    );
+
+    dirLightFolder.addBinding(game.lights.directionalLight.shadow, "radius", {
+      label: "shadow radius",
+      min: 0,
+      max: 10,
+    });
+
+    dirLightFolder
+      .addBinding(game.lights.directionalLight.shadow.mapSize, "width", {
+        label: "shadow map size",
+        min: 512,
+        max: 4096,
+        step: 512,
+      })
+      .on("change", () => {
+        game.lights.directionalLight.shadow.mapSize.height =
+          game.lights.directionalLight.shadow.mapSize.width;
+        game.lights.directionalLight.shadow.map?.dispose();
+      });
+
+    const shadowCamFolder = dirLightFolder
+      .addFolder({
+        title: "shadow camera",
+        expanded: false,
+      })
+      .on("change", () => {
+        game.lights.directionalLight.shadow.camera.updateProjectionMatrix();
+      });
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "near",
+      {
+        label: "near",
+        min: 1,
+        max: 50,
+      }
+    );
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "far",
+      {
+        label: "far",
+        min: 50,
+        max: 300,
+      }
+    );
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "left",
+      {
+        label: "left",
+        min: -200,
+        max: 0,
+      }
+    );
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "right",
+      {
+        label: "right",
+        min: 0,
+        max: 200,
+      }
+    );
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "top",
+      {
+        label: "top",
+        min: 0,
+        max: 200,
+      }
+    );
+
+    shadowCamFolder.addBinding(
+      game.lights.directionalLight.shadow.camera,
+      "bottom",
+      {
+        label: "bottom",
+        min: -200,
+        max: 0,
+      }
+    );
   }
 }

@@ -31,15 +31,19 @@ export class Game extends Engine {
     );
     this.scene.add(this.pointerLockCamera);
     this.config = new Config();
-    this.debugController = new DebugController(this);
 
     this.renderer.setClearColor(this.config.clearColor);
     this.renderer.shadowMap.enabled = true;
     this.view.position.set(32, 16, 32);
     this.pointerLockCamera.position.set(32, 16, 32);
+    this.scene.fog = new THREE.Fog(
+      this.config.clearColor,
+      this.config.worldParams.world.width,
+      this.config.worldParams.world.width * 1.3
+    );
     this.stats.activate("2");
 
-    this.lights = new Lights();
+    this.lights = new Lights(this.config.lights);
     this.world = new World(this.config.worldParams, this.loader);
     this.player = new Player(
       {
@@ -59,13 +63,15 @@ export class Game extends Engine {
     this.viewport.events.on("change", () => {
       this.resize();
     });
+
+    this.debugController = new DebugController(this);
   }
 
   public update(delta: number) {
     this.player.update(delta);
     this.world.generate({ playerPosition: this.player.position });
     this.controls.target.copy(this.player.position);
-    this.lights.update(this.player.position);
+    this.lights.update(delta, this.player.position);
     this.pointerLockControls.update(delta);
     const camera = this.player.isActive ? this.pointerLockCamera : this.view;
     this.renderer.render(this.scene, camera);
