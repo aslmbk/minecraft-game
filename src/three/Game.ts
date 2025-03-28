@@ -57,17 +57,13 @@ export class Game extends Engine {
     this.scene.add(this.lights);
     // this.scene.add(this.player.createBoundsHelper());
 
-    this.time.events.on("tick", ({ delta }) => {
-      this.update(delta);
-    });
-    this.viewport.events.on("change", () => {
-      this.resize();
-    });
+    this.time.events.on("tick", this.update.bind(this));
+    this.viewport.events.on("change", this.resize.bind(this));
 
     this.debugController = new DebugController(this);
   }
 
-  public update(delta: number) {
+  public update({ delta }: { delta: number }) {
     this.player.update(delta);
     this.world.generate({ playerPosition: this.player.position });
     this.controls.target.copy(this.player.position);
@@ -77,8 +73,8 @@ export class Game extends Engine {
     this.renderer.render(this.scene, camera);
   }
 
-  public resize() {
-    this.pointerLockCamera.aspect = this.viewport.ratio;
+  public resize({ ratio }: { ratio: number }) {
+    this.pointerLockCamera.aspect = ratio;
     this.pointerLockCamera.updateProjectionMatrix();
   }
 }

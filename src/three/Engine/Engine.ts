@@ -5,6 +5,8 @@ import { Viewport } from "./Viewport";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Loader } from "./Loader";
 import { Stats } from "./Stats";
+import { Helpers } from "./Helpers";
+import { Cursor } from "./Cursor";
 
 export type EngineOptions = {
   domElement: HTMLElement;
@@ -16,12 +18,14 @@ export class Engine {
   public readonly debug!: Debug;
   public readonly time!: Time;
   public readonly viewport!: Viewport;
+  public readonly cursor!: Cursor;
   public readonly scene!: THREE.Scene;
   public readonly view!: THREE.PerspectiveCamera;
   public readonly renderer!: THREE.WebGLRenderer;
   public readonly controls!: OrbitControls;
   public readonly loader!: Loader;
   public readonly stats!: Stats;
+  public readonly helpers!: Helpers;
 
   private autoRender: boolean;
 
@@ -32,12 +36,18 @@ export class Engine {
     this.debug = new Debug();
     this.time = new Time();
     this.viewport = new Viewport(this.domElement);
+    this.cursor = new Cursor(
+      this.domElement,
+      this.viewport.width,
+      this.viewport.height
+    );
     this.scene = new THREE.Scene();
     this.view = new THREE.PerspectiveCamera(75, this.viewport.ratio, 0.1, 1000);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls = new OrbitControls(this.view, this.renderer.domElement);
     this.loader = new Loader();
     this.stats = new Stats();
+    this.helpers = new Helpers(this.scene);
 
     this.scene.add(this.view);
     this.view.position.set(0, 0, 6);
@@ -61,11 +71,15 @@ export class Engine {
       this.controls.update();
       this.stats.update();
     });
-    this.viewport.events.on("change", () => {
-      this.view.aspect = this.viewport.ratio;
-      this.view.updateProjectionMatrix();
-      this.renderer.setSize(this.viewport.width, this.viewport.height);
-      this.renderer.setPixelRatio(this.viewport.pixelRatio);
-    });
+    this.viewport.events.on(
+      "change",
+      ({ width, height, ratio, pixelRatio }) => {
+        this.view.aspect = ratio;
+        this.view.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(pixelRatio);
+        this.cursor.resize(width, height);
+      }
+    );
   }
 }
