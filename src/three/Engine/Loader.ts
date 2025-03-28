@@ -25,24 +25,12 @@ export class Loader {
   private textureAtlas: TextureAtlas;
 
   public readonly events = new Events<
-    | {
-        trigger: "load";
-        args: [];
-      }
+    | { trigger: "load"; args: [] }
     | {
         trigger: "progress";
-        args: [
-          {
-            total: number;
-            loaded: number;
-            url: string;
-          }
-        ];
+        args: [{ total: number; loaded: number; url: string }];
       }
-    | {
-        trigger: "error";
-        args: [string];
-      }
+    | { trigger: "error"; args: [string] }
   >();
 
   constructor() {

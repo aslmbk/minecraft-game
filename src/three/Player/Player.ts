@@ -3,6 +3,11 @@ import * as THREE from "three";
 import { World } from "../World";
 import { Physics } from "./Physics";
 
+type Inputs = {
+  keys: Record<string, boolean>;
+  event: KeyboardEvent;
+};
+
 export type PlayerConfig = {
   moveSpeed: number;
   radius: number;
@@ -11,13 +16,8 @@ export type PlayerConfig = {
   jumpSpeed: number;
 };
 
-type PlayerParams = {
-  controls: PointerLockControls;
-  playerConfig: PlayerConfig;
-};
-
 export class Player {
-  private frameRate = 1 / 120;
+  private frameRate = 1 / 100;
   private deltaTime = 0;
   private controls: PointerLockControls;
 
@@ -25,14 +25,6 @@ export class Player {
   private physics: Physics;
   private input = new THREE.Vector3();
   private velocity = new THREE.Vector3();
-
-  private keys: { [key: string]: boolean } = {
-    KeyW: false,
-    KeyS: false,
-    KeyA: false,
-    KeyD: false,
-    Space: false,
-  };
 
   private boundsHelper: THREE.Mesh | null = null;
 
@@ -42,37 +34,37 @@ export class Player {
 
   private currentPositionTestVariable = new THREE.Vector3();
 
-  constructor(params: PlayerParams, world: World) {
-    this.controls = params.controls;
+  constructor(
+    params: PlayerConfig,
+    controls: PointerLockControls,
+    world: World
+  ) {
+    this.controls = controls;
     this.controls.lock();
-    this._params = params.playerConfig;
+    this._params = params;
     this.physics = new Physics(world, this);
-    window.addEventListener("keydown", this.keyDownHandler.bind(this));
-    window.addEventListener("keyup", this.keyUpHandler.bind(this));
     this._nextPosition.copy(this.controls.object.position);
   }
 
-  private keyDownHandler(event: KeyboardEvent) {
-    if (event.code in this.keys) this.keys[event.code] = true;
-    this.updateMovementVector();
+  public keyDownHandler({ keys }: Inputs) {
+    this.updateMovementVector(keys);
   }
 
-  private keyUpHandler(event: KeyboardEvent) {
-    if (event.code in this.keys) this.keys[event.code] = false;
+  public keyUpHandler({ event, keys }: Inputs) {
     if (event.code === "Escape" && !event.repeat) {
       if (this.controls.isLocked) this.controls.unlock();
       else this.controls.lock();
     }
-    this.updateMovementVector();
+    this.updateMovementVector(keys);
   }
 
-  private updateMovementVector() {
+  private updateMovementVector(keys: Record<string, boolean>) {
     this.input.set(0, 0, 0);
-    if (this.keys.KeyW) this.input.z += this._params.moveSpeed;
-    if (this.keys.KeyS) this.input.z -= this._params.moveSpeed;
-    if (this.keys.KeyA) this.input.x -= this._params.moveSpeed;
-    if (this.keys.KeyD) this.input.x += this._params.moveSpeed;
-    if (this.keys.Space && this.onGround) {
+    if (keys.KeyW) this.input.z += this._params.moveSpeed;
+    if (keys.KeyS) this.input.z -= this._params.moveSpeed;
+    if (keys.KeyA) this.input.x -= this._params.moveSpeed;
+    if (keys.KeyD) this.input.x += this._params.moveSpeed;
+    if (keys.Space && this.onGround) {
       this.velocity.y += this._params.jumpSpeed;
     }
 
@@ -113,6 +105,7 @@ export class Player {
   }
 
   public update(dt: number) {
+    this.frameRate = Math.min(1 / 60, dt);
     this.deltaTime += dt;
     if (!this.isActive || this.deltaTime < this.frameRate) return;
     this.controls.object.position.lerp(

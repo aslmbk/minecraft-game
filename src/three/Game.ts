@@ -7,6 +7,8 @@ import { DebugController } from "./DebugController";
 import { Player } from "./Player";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
+const cameraPosition = new THREE.Vector3(32, 16, 32);
+
 export class Game extends Engine {
   public config: Config;
   public lights: Lights;
@@ -34,8 +36,8 @@ export class Game extends Engine {
 
     this.renderer.setClearColor(this.config.clearColor);
     this.renderer.shadowMap.enabled = true;
-    this.view.position.set(32, 16, 32);
-    this.pointerLockCamera.position.set(32, 16, 32);
+    this.view.position.copy(cameraPosition);
+    this.pointerLockCamera.position.copy(cameraPosition);
     this.scene.fog = new THREE.Fog(
       this.config.clearColor,
       this.config.worldParams.world.width,
@@ -46,10 +48,8 @@ export class Game extends Engine {
     this.lights = new Lights(this.config.lights);
     this.world = new World(this.config.worldParams, this.loader);
     this.player = new Player(
-      {
-        controls: this.pointerLockControls,
-        playerConfig: this.config.playerConfig,
-      },
+      this.config.playerConfig,
+      this.pointerLockControls,
       this.world
     );
 
@@ -59,6 +59,15 @@ export class Game extends Engine {
 
     this.time.events.on("tick", this.update.bind(this));
     this.viewport.events.on("change", this.resize.bind(this));
+    this.inputs.events.on("keydown", (params) => {
+      this.player.keyDownHandler(params);
+    });
+    this.inputs.events.on("keyup", (params) => {
+      this.player.keyUpHandler(params);
+      this.controls.target.copy(this.player.position);
+      this.controls.object.position.copy(this.player.position);
+      this.controls.object.position.add(cameraPosition);
+    });
 
     this.debugController = new DebugController(this);
   }
@@ -66,7 +75,6 @@ export class Game extends Engine {
   public update({ delta }: { delta: number }) {
     this.player.update(delta);
     this.world.generate({ playerPosition: this.player.position });
-    this.controls.target.copy(this.player.position);
     this.lights.update(delta, this.player.position);
     this.pointerLockControls.update(delta);
     const camera = this.player.isActive ? this.pointerLockCamera : this.view;

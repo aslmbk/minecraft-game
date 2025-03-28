@@ -7,6 +7,7 @@ import { Loader } from "./Loader";
 import { Stats } from "./Stats";
 import { Helpers } from "./Helpers";
 import { Cursor } from "./Cursor";
+import { Inputs } from "./Inputs";
 
 export type EngineOptions = {
   domElement: HTMLElement;
@@ -19,6 +20,7 @@ export class Engine {
   public readonly time!: Time;
   public readonly viewport!: Viewport;
   public readonly cursor!: Cursor;
+  public readonly inputs!: Inputs;
   public readonly scene!: THREE.Scene;
   public readonly view!: THREE.PerspectiveCamera;
   public readonly renderer!: THREE.WebGLRenderer;
@@ -41,6 +43,7 @@ export class Engine {
       this.viewport.width,
       this.viewport.height
     );
+    this.inputs = new Inputs();
     this.scene = new THREE.Scene();
     this.view = new THREE.PerspectiveCamera(75, this.viewport.ratio, 0.1, 1000);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
