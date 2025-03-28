@@ -42,22 +42,21 @@ type TerrainPosition = {
 };
 
 export class Terrain {
-  public rng: RNG;
-  public data: TerrainType[][][] = [];
-  public params: TerrainParams;
+  private rng: RNG;
+  private data: TerrainType[][][] = [];
+  private params: TerrainParams;
+  public instance!: THREE.InstancedMesh;
 
-  constructor(params: TerrainParams) {
+  constructor(
+    params: TerrainParams,
+    position: TerrainPosition = { x: 0, y: 0, z: 0 }
+  ) {
     this.params = params;
-    this.rng = new RNG(this.params.seed);
-    this.data = [];
-  }
-
-  public generate(position: TerrainPosition = { x: 0, y: 0, z: 0 }) {
     this.rng = new RNG(this.params.seed);
     this.initialize();
     this.generateResources(position);
     this.generateTerrain(position);
-    return this.generateMeshes();
+    this.generateMeshes();
   }
 
   private initialize() {
@@ -128,12 +127,10 @@ export class Terrain {
         let height = Math.floor(this.params.world.height * scaledNoise);
         height = Math.max(0, Math.min(height, this.params.world.height - 1));
         for (let y = 0; y < this.params.world.height; y++) {
-          if (y === height) {
+          const blockId = this.getBlock(x, y, z)?.id;
+          if (y === height && blockId === blocks.empty.id) {
             this.setBlockId(x, y, z, blocks.grass.id);
-          } else if (
-            y < height &&
-            this.getBlock(x, y, z)?.id === blocks.empty.id
-          ) {
+          } else if (y < height && blockId === blocks.empty.id) {
             this.setBlockId(x, y, z, blocks.dirt.id);
           } else if (y > height) {
             this.setBlockId(x, y, z, blocks.empty.id);
@@ -149,10 +146,10 @@ export class Terrain {
       this.params.world.width *
       this.params.world.height *
       this.params.world.width;
-    const instance = new THREE.InstancedMesh(geometry, blockMaterial, maxCount);
-    instance.count = 0;
-    instance.castShadow = true;
-    instance.receiveShadow = true;
+    this.instance = new THREE.InstancedMesh(geometry, blockMaterial, maxCount);
+    this.instance.count = 0;
+    this.instance.castShadow = true;
+    this.instance.receiveShadow = true;
 
     const textureIDAttribute = new THREE.InstancedBufferAttribute(
       new Float32Array(maxCount),
@@ -170,16 +167,14 @@ export class Terrain {
             continue;
           }
           const block = blocksArray.find((block) => block.id === blockId)!;
-          const instanceId = instance.count++;
+          const instanceId = this.instance.count++;
           matrix.setPosition(x, y, z);
-          instance.setMatrixAt(instanceId, matrix);
+          this.instance.setMatrixAt(instanceId, matrix);
           textureIDAttribute.setX(instanceId, block.textureIndex);
           this.setBlockInstanceId(x, y, z, instanceId);
         }
       }
     }
-
-    return instance;
   }
 
   public getBlock(x: number, y: number, z: number) {

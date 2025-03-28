@@ -7,12 +7,11 @@ export type WorldParams = TerrainParams & {
   chunkDistance: number;
 };
 
-type ChunkType = [Terrain, THREE.InstancedMesh];
 type ChunkCoords = { x: number; z: number };
 
 export class World extends THREE.Group {
   private params: WorldParams;
-  public chunks: ChunkType[] = [];
+  public chunks: Terrain[] = [];
   private loader: Loader;
   private idleAdding: ChunkCoords[] = [];
 
@@ -56,7 +55,8 @@ export class World extends THREE.Group {
       if (
         !visibleChunksCoords.some(
           (coord) =>
-            coord.x === chunk[1].userData.x && coord.z === chunk[1].userData.z
+            coord.x === chunk.instance.userData.x &&
+            coord.z === chunk.instance.userData.z
         ) ||
         force
       ) {
@@ -81,17 +81,16 @@ export class World extends THREE.Group {
   }
 
   private addChunk({ x, z }: ChunkCoords) {
-    const chunk = new Terrain(this.params);
     const position = {
       x: x * this.params.world.width,
       y: 0,
       z: z * this.params.world.width,
     };
-    const instance = chunk.generate(position);
-    instance.position.copy(position);
-    instance.userData = { x, z };
-    this.add(instance);
-    this.chunks.push([chunk, instance]);
+    const chunk = new Terrain(this.params, position);
+    chunk.instance.position.copy(position);
+    chunk.instance.userData = { x, z };
+    this.add(chunk.instance);
+    this.chunks.push(chunk);
   }
 
   private loadTextures() {
@@ -105,7 +104,7 @@ export class World extends THREE.Group {
 
   public setParams(params: WorldParams) {
     this.params = params;
-    this.chunks.forEach((chunk) => chunk[0].setParams(params));
+    this.chunks.forEach((chunk) => chunk.setParams(params));
   }
 
   private worldCoordsToChunkCoords(x: number, y: number, z: number) {
@@ -123,7 +122,7 @@ export class World extends THREE.Group {
 
   private getChunk(x: number, z: number) {
     return this.chunks.find((chunk) => {
-      return chunk[1].userData.x === x && chunk[1].userData.z === z;
+      return chunk.instance.userData.x === x && chunk.instance.userData.z === z;
     });
   }
 
@@ -133,12 +132,12 @@ export class World extends THREE.Group {
     if (!chunk) {
       return null;
     }
-    return chunk[0].getBlock(blockCoords.x, blockCoords.y, blockCoords.z);
+    return chunk.getBlock(blockCoords.x, blockCoords.y, blockCoords.z);
   }
 
-  private deleteChunk(chunk: ChunkType) {
-    this.remove(chunk[1]);
-    chunk[1].geometry.dispose();
+  private deleteChunk(chunk: Terrain) {
+    this.remove(chunk.instance);
+    chunk.instance.geometry.dispose();
     this.chunks.splice(this.chunks.indexOf(chunk), 1);
   }
 }
