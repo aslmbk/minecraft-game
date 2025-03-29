@@ -35,7 +35,7 @@ export type TerrainParams = {
   };
 };
 
-type TerrainPosition = {
+export type TerrainPosition = {
   x: number;
   y: number;
   z: number;
@@ -106,7 +106,7 @@ export class Terrain {
               (z + position.z) / resource.scale.z
             );
             if (value > resource.threshold) {
-              this.setBlockId(x, y, z, resource.resource.id);
+              this.setBlockId({ x, y, z }, resource.resource.id);
             }
           }
         }
@@ -127,13 +127,14 @@ export class Terrain {
         let height = Math.floor(this.params.world.height * scaledNoise);
         height = Math.max(0, Math.min(height, this.params.world.height - 1));
         for (let y = 0; y < this.params.world.height; y++) {
-          const blockId = this.getBlock(x, y, z)?.id;
+          const pos = { x, y, z };
+          const blockId = this.getBlock(pos)?.id;
           if (y === height && blockId === blocks.empty.id) {
-            this.setBlockId(x, y, z, blocks.grass.id);
+            this.setBlockId(pos, blocks.grass.id);
           } else if (y < height && blockId === blocks.empty.id) {
-            this.setBlockId(x, y, z, blocks.dirt.id);
+            this.setBlockId(pos, blocks.dirt.id);
           } else if (y > height) {
-            this.setBlockId(x, y, z, blocks.empty.id);
+            this.setBlockId(pos, blocks.empty.id);
           }
         }
       }
@@ -162,8 +163,9 @@ export class Terrain {
     for (let x = 0; x < this.params.world.width; x++) {
       for (let y = 0; y < this.params.world.height; y++) {
         for (let z = 0; z < this.params.world.width; z++) {
-          const blockId = this.getBlock(x, y, z)?.id;
-          if (blockId === blocks.empty.id || this.isBlockObscured(x, y, z)) {
+          const pos = { x, y, z };
+          const blockId = this.getBlock(pos)?.id;
+          if (blockId === blocks.empty.id || this.isBlockObscured(pos)) {
             continue;
           }
           const block = blocksArray.find((block) => block.id === blockId)!;
@@ -171,33 +173,31 @@ export class Terrain {
           matrix.setPosition(x, y, z);
           this.instance.setMatrixAt(instanceId, matrix);
           textureIDAttribute.setX(instanceId, block.textureIndex);
-          this.setBlockInstanceId(x, y, z, instanceId);
+          this.setBlockInstanceId(pos, instanceId);
         }
       }
     }
   }
 
-  public getBlock(x: number, y: number, z: number) {
-    if (!this.inBounds(x, y, z)) return null;
-    return this.data[x][y][z];
+  public getBlock(pos: TerrainPosition) {
+    if (!this.inBounds(pos)) return null;
+    return this.data[pos.x][pos.y][pos.z];
   }
 
-  public setBlockId(x: number, y: number, z: number, id: number) {
-    if (!this.inBounds(x, y, z)) return;
-    this.data[x][y][z].id = id;
+  public setBlockId(pos: TerrainPosition, id: number) {
+    if (!this.inBounds(pos)) return;
+    this.data[pos.x][pos.y][pos.z].id = id;
   }
 
   public setBlockInstanceId(
-    x: number,
-    y: number,
-    z: number,
-    instanceId: number
+    pos: TerrainPosition,
+    instanceId: TerrainType["instanceId"]
   ) {
-    if (!this.inBounds(x, y, z)) return;
-    this.data[x][y][z].instanceId = instanceId;
+    if (!this.inBounds(pos)) return;
+    this.data[pos.x][pos.y][pos.z].instanceId = instanceId;
   }
 
-  private inBounds(x: number, y: number, z: number) {
+  private inBounds({ x, y, z }: TerrainPosition) {
     return (
       x >= 0 &&
       x < this.params.world.width &&
@@ -208,13 +208,13 @@ export class Terrain {
     );
   }
 
-  public isBlockObscured(x: number, y: number, z: number) {
-    const up = this.getBlock(x, y + 1, z)?.id ?? blocks.empty.id;
-    const down = this.getBlock(x, y - 1, z)?.id ?? blocks.empty.id;
-    const left = this.getBlock(x + 1, y, z)?.id ?? blocks.empty.id;
-    const right = this.getBlock(x - 1, y, z)?.id ?? blocks.empty.id;
-    const forward = this.getBlock(x, y, z + 1)?.id ?? blocks.empty.id;
-    const back = this.getBlock(x, y, z - 1)?.id ?? blocks.empty.id;
+  public isBlockObscured({ x, y, z }: TerrainPosition) {
+    const up = this.getBlock({ x, y: y + 1, z })?.id ?? blocks.empty.id;
+    const down = this.getBlock({ x, y: y - 1, z })?.id ?? blocks.empty.id;
+    const left = this.getBlock({ x: x + 1, y, z })?.id ?? blocks.empty.id;
+    const right = this.getBlock({ x: x - 1, y, z })?.id ?? blocks.empty.id;
+    const forward = this.getBlock({ x, y, z: z + 1 })?.id ?? blocks.empty.id;
+    const back = this.getBlock({ x, y, z: z - 1 })?.id ?? blocks.empty.id;
     return (
       up !== blocks.empty.id &&
       down !== blocks.empty.id &&
@@ -223,6 +223,49 @@ export class Terrain {
       forward !== blocks.empty.id &&
       back !== blocks.empty.id
     );
+  }
+
+  public removeBlock(pos: TerrainPosition) {
+    const block = { ...this.getBlock(pos) };
+    if (!block || block.id === blocks.empty.id || !block.instanceId) return;
+    const matrix = new THREE.Matrix4();
+    this.instance.getMatrixAt(this.instance.count - 1, matrix);
+    this.instance.setMatrixAt(block.instanceId, matrix);
+
+    const attribute = this.instance.geometry.attributes.textureID;
+    attribute.setX(block.instanceId, attribute.getX(this.instance.count - 1));
+
+    this.instance.count--;
+    this.setBlockId(pos, blocks.empty.id);
+    this.setBlockInstanceId(pos, null);
+    this.setBlockInstanceId(
+      new THREE.Vector3().applyMatrix4(matrix),
+      block.instanceId
+    );
+
+    const blocksArray = Object.values(blocks);
+    const blockCoords = [
+      { x: pos.x + 1, y: pos.y, z: pos.z },
+      { x: pos.x - 1, y: pos.y, z: pos.z },
+      { x: pos.x, y: pos.y + 1, z: pos.z },
+      { x: pos.x, y: pos.y - 1, z: pos.z },
+      { x: pos.x, y: pos.y, z: pos.z + 1 },
+      { x: pos.x, y: pos.y, z: pos.z - 1 },
+    ];
+    for (const blockCoord of blockCoords) {
+      const b = this.getBlock(blockCoord);
+      if (!b || b.id === blocks.empty.id || b.instanceId) continue;
+      const instanceId = this.instance.count++;
+      this.setBlockInstanceId(blockCoord, instanceId);
+      matrix.setPosition(blockCoord.x, blockCoord.y, blockCoord.z);
+      this.instance.setMatrixAt(instanceId, matrix);
+      const blockData = blocksArray.find(({ id }) => b.id === id)!;
+      attribute.setX(instanceId, blockData.textureIndex);
+    }
+
+    attribute.needsUpdate = true;
+    this.instance.instanceMatrix.needsUpdate = true;
+    this.instance.computeBoundingSphere();
   }
 
   public setParams(params: TerrainParams) {

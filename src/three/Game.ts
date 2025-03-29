@@ -8,6 +8,7 @@ import { Player } from "./Player";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 const cameraPosition = new THREE.Vector3(32, 16, 32);
+const screenCenter = new THREE.Vector2(0, 0);
 
 export class Game extends Engine {
   public config: Config;
@@ -32,11 +33,12 @@ export class Game extends Engine {
       this.renderer.domElement
     );
     this.scene.add(this.pointerLockCamera);
+    this.rays.updateCamera(this.pointerLockCamera);
     this.config = new Config();
 
     this.renderer.setClearColor(this.config.clearColor);
     this.renderer.shadowMap.enabled = true;
-    this.view.position.copy(cameraPosition);
+    this.camera.position.copy(cameraPosition);
     this.pointerLockCamera.position.copy(cameraPosition);
     this.scene.fog = new THREE.Fog(
       this.config.clearColor,
@@ -54,6 +56,7 @@ export class Game extends Engine {
     );
 
     this.scene.add(this.world);
+    this.scene.add(this.world.selectedBlock);
     this.scene.add(this.lights);
     // this.scene.add(this.player.createBoundsHelper());
 
@@ -68,16 +71,31 @@ export class Game extends Engine {
       this.controls.object.position.copy(this.player.position);
       this.controls.object.position.add(cameraPosition);
     });
+    this.cursor.events.on("click", () => {
+      if (this.player.isActive) this.world.removeBlock();
+    });
 
     this.debugController = new DebugController(this);
   }
 
   public update({ delta }: { delta: number }) {
-    this.player.update(delta);
-    this.world.generate({ playerPosition: this.player.position });
-    this.lights.update(delta, this.player.position);
-    this.pointerLockControls.update(delta);
-    const camera = this.player.isActive ? this.pointerLockCamera : this.view;
+    let camera = this.camera;
+    if (this.player.isActive) {
+      camera = this.pointerLockCamera;
+      this.player.update(delta);
+      this.world.generate({ playerPosition: this.player.position });
+      this.lights.update(delta, this.player.position);
+      this.pointerLockControls.update(delta);
+      const intersects = this.rays.castToOne(
+        screenCenter,
+        this.world
+      ) as THREE.Intersection<THREE.InstancedMesh>[];
+      if (intersects.length > 0) {
+        this.world.intersectionHandler(intersects[0]);
+      } else {
+        this.world.nonIntersectionHandler();
+      }
+    }
     this.renderer.render(this.scene, camera);
   }
 

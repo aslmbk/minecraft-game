@@ -79,6 +79,11 @@ export const blockMaterialUniforms = {
     null as unknown as THREE.Texture
   ),
 };
+export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffffaa,
+  transparent: true,
+  opacity: 0.3,
+});
 
 blockMaterial.onBeforeCompile = (shader) => {
   shader.uniforms = {

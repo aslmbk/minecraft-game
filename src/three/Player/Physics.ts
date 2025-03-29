@@ -66,9 +66,10 @@ export class Physics {
     for (let x = playerAABB.x.min; x <= playerAABB.x.max; x++) {
       for (let y = playerAABB.y.min; y <= playerAABB.y.max; y++) {
         for (let z = playerAABB.z.min; z <= playerAABB.z.max; z++) {
-          const block = this.world.getBlock(x, y, z);
+          const pos = { x, y, z };
+          const block = this.world.getBlock(pos);
           if (block && block.id !== blocks.empty.id) {
-            candidates.push({ x, y, z });
+            candidates.push(pos);
           }
         }
       }

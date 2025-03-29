@@ -1,7 +1,14 @@
 import * as THREE from "three";
-import { blockMaterialUniforms, blockTextures } from "./Blocks";
-import { Terrain, TerrainParams } from "./Terrain";
+import {
+  blockGeometry,
+  blockMaterialUniforms,
+  blockTextures,
+  selectedBlockMaterial,
+} from "./Blocks";
+import { Terrain, TerrainParams, TerrainPosition } from "./Terrain";
 import { Loader } from "../Engine/Loader";
+
+const matrix = new THREE.Matrix4();
 
 export type WorldParams = TerrainParams & {
   chunkDistance: number;
@@ -14,7 +21,7 @@ export class World extends THREE.Group {
   public chunks: Terrain[] = [];
   private loader: Loader;
   private idleAdding: ChunkCoords[] = [];
-
+  public selectedBlock: THREE.Mesh;
   private lastPlayerPosition = new THREE.Vector3();
 
   constructor(params: WorldParams, loader: Loader) {
@@ -22,6 +29,9 @@ export class World extends THREE.Group {
     this.params = params;
     this.loader = loader;
     this.loadTextures();
+    this.selectedBlock = new THREE.Mesh(blockGeometry, selectedBlockMaterial);
+    this.selectedBlock.scale.multiplyScalar(1.01);
+    this.selectedBlock.visible = false;
   }
 
   public generate({
@@ -32,11 +42,7 @@ export class World extends THREE.Group {
     force?: boolean;
   } = {}) {
     const playerPos = playerPosition ?? this.lastPlayerPosition;
-    const { chunkCoords } = this.worldCoordsToChunkCoords(
-      playerPos.x,
-      playerPos.y,
-      playerPos.z
-    );
+    const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
     for (
       let x = chunkCoords.x - this.params.chunkDistance;
@@ -107,15 +113,15 @@ export class World extends THREE.Group {
     this.chunks.forEach((chunk) => chunk.setParams(params));
   }
 
-  private worldCoordsToChunkCoords(x: number, y: number, z: number) {
+  private worldCoordsToChunkCoords(pos: TerrainPosition) {
     const chunkCoords = {
-      x: Math.floor(x / this.params.world.width),
-      z: Math.floor(z / this.params.world.width),
+      x: Math.floor(pos.x / this.params.world.width),
+      z: Math.floor(pos.z / this.params.world.width),
     };
     const blockCoords = {
-      x: x - this.params.world.width * chunkCoords.x,
-      y,
-      z: z - this.params.world.width * chunkCoords.z,
+      x: pos.x - this.params.world.width * chunkCoords.x,
+      y: pos.y,
+      z: pos.z - this.params.world.width * chunkCoords.z,
     };
     return { chunkCoords, blockCoords };
   }
@@ -126,18 +132,44 @@ export class World extends THREE.Group {
     });
   }
 
-  public getBlock(x: number, y: number, z: number) {
-    const { chunkCoords, blockCoords } = this.worldCoordsToChunkCoords(x, y, z);
+  public getBlock(pos: TerrainPosition) {
+    const { chunkCoords, blockCoords } = this.worldCoordsToChunkCoords(pos);
     const chunk = this.getChunk(chunkCoords.x, chunkCoords.z);
     if (!chunk) {
       return null;
     }
-    return chunk.getBlock(blockCoords.x, blockCoords.y, blockCoords.z);
+    return chunk.getBlock(blockCoords);
   }
 
   private deleteChunk(chunk: Terrain) {
     this.remove(chunk.instance);
     chunk.instance.geometry.dispose();
     this.chunks.splice(this.chunks.indexOf(chunk), 1);
+  }
+
+  public intersectionHandler(
+    intersection: THREE.Intersection<THREE.InstancedMesh>
+  ) {
+    const chunk = this.getChunk(
+      intersection.object.userData.x,
+      intersection.object.userData.z
+    );
+    if (!chunk) return;
+    intersection.object.getMatrixAt(intersection.instanceId!, matrix);
+    this.selectedBlock.position.copy(
+      chunk.instance.position.clone().applyMatrix4(matrix)
+    );
+    this.selectedBlock.visible = true;
+  }
+
+  public nonIntersectionHandler() {
+    this.selectedBlock.visible = false;
+  }
+
+  public removeBlock() {
+    if (!this.selectedBlock.visible) return;
+    const coords = this.worldCoordsToChunkCoords(this.selectedBlock.position);
+    const chunk = this.getChunk(coords.chunkCoords.x, coords.chunkCoords.z);
+    if (chunk) chunk.removeBlock(coords.blockCoords);
   }
 }

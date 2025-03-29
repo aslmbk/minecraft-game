@@ -8,6 +8,7 @@ import { Stats } from "./Stats";
 import { Helpers } from "./Helpers";
 import { Cursor } from "./Cursor";
 import { Inputs } from "./Inputs";
+import { Rays } from "./Rays";
 
 export type EngineOptions = {
   domElement: HTMLElement;
@@ -22,9 +23,10 @@ export class Engine {
   public readonly cursor!: Cursor;
   public readonly inputs!: Inputs;
   public readonly scene!: THREE.Scene;
-  public readonly view!: THREE.PerspectiveCamera;
+  public readonly camera!: THREE.PerspectiveCamera;
   public readonly renderer!: THREE.WebGLRenderer;
   public readonly controls!: OrbitControls;
+  public readonly rays!: Rays;
   public readonly loader!: Loader;
   public readonly stats!: Stats;
   public readonly helpers!: Helpers;
@@ -45,15 +47,21 @@ export class Engine {
     );
     this.inputs = new Inputs();
     this.scene = new THREE.Scene();
-    this.view = new THREE.PerspectiveCamera(75, this.viewport.ratio, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(
+      75,
+      this.viewport.ratio,
+      0.1,
+      1000
+    );
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.controls = new OrbitControls(this.view, this.renderer.domElement);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.rays = new Rays(this.camera);
     this.loader = new Loader();
     this.stats = new Stats();
     this.helpers = new Helpers(this.scene);
 
-    this.scene.add(this.view);
-    this.view.position.set(0, 0, 6);
+    this.scene.add(this.camera);
+    this.camera.position.set(0, 0, 6);
     this.controls.enableDamping = true;
     this.domElement.appendChild(this.renderer.domElement);
 
@@ -65,7 +73,7 @@ export class Engine {
       "tick",
       () => {
         if (this.autoRender) {
-          this.renderer.render(this.scene, this.view);
+          this.renderer.render(this.scene, this.camera);
         }
       },
       5
@@ -77,8 +85,8 @@ export class Engine {
     this.viewport.events.on(
       "change",
       ({ width, height, ratio, pixelRatio }) => {
-        this.view.aspect = ratio;
-        this.view.updateProjectionMatrix();
+        this.camera.aspect = ratio;
+        this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(pixelRatio);
         this.cursor.resize(width, height);
