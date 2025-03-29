@@ -226,24 +226,29 @@ export class Terrain {
   }
 
   public removeBlock(pos: TerrainPosition) {
-    const block = { ...this.getBlock(pos) };
+    const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || !block.instanceId) return;
-    const matrix = new THREE.Matrix4();
-    this.instance.getMatrixAt(this.instance.count - 1, matrix);
-    this.instance.setMatrixAt(block.instanceId, matrix);
-
-    const attribute = this.instance.geometry.attributes.textureID;
-    attribute.setX(block.instanceId, attribute.getX(this.instance.count - 1));
-
-    this.instance.count--;
+    this.removeBlockInstance(pos);
     this.setBlockId(pos, blocks.empty.id);
-    this.setBlockInstanceId(pos, null);
-    this.setBlockInstanceId(
-      new THREE.Vector3().applyMatrix4(matrix),
-      block.instanceId
-    );
 
-    const blocksArray = Object.values(blocks);
+    this.addBlockInstance({ x: pos.x + 1, y: pos.y, z: pos.z });
+    this.addBlockInstance({ x: pos.x - 1, y: pos.y, z: pos.z });
+    this.addBlockInstance({ x: pos.x, y: pos.y + 1, z: pos.z });
+    this.addBlockInstance({ x: pos.x, y: pos.y - 1, z: pos.z });
+    this.addBlockInstance({ x: pos.x, y: pos.y, z: pos.z + 1 });
+    this.addBlockInstance({ x: pos.x, y: pos.y, z: pos.z - 1 });
+
+    this.instance.geometry.attributes.textureID.needsUpdate = true;
+    this.instance.instanceMatrix.needsUpdate = true;
+    this.instance.computeBoundingSphere();
+  }
+
+  public addBlock(pos: TerrainPosition, id: number) {
+    const block = this.getBlock(pos);
+    if (!block || block.id !== blocks.empty.id) return;
+    this.setBlockId(pos, id);
+    this.addBlockInstance(pos);
+
     const blockCoords = [
       { x: pos.x + 1, y: pos.y, z: pos.z },
       { x: pos.x - 1, y: pos.y, z: pos.z },
@@ -253,19 +258,50 @@ export class Terrain {
       { x: pos.x, y: pos.y, z: pos.z - 1 },
     ];
     for (const blockCoord of blockCoords) {
-      const b = this.getBlock(blockCoord);
-      if (!b || b.id === blocks.empty.id || b.instanceId) continue;
-      const instanceId = this.instance.count++;
-      this.setBlockInstanceId(blockCoord, instanceId);
-      matrix.setPosition(blockCoord.x, blockCoord.y, blockCoord.z);
-      this.instance.setMatrixAt(instanceId, matrix);
-      const blockData = blocksArray.find(({ id }) => b.id === id)!;
-      attribute.setX(instanceId, blockData.textureIndex);
+      if (this.isBlockObscured(blockCoord)) {
+        this.removeBlockInstance(blockCoord);
+      }
     }
 
-    attribute.needsUpdate = true;
+    this.instance.geometry.attributes.textureID.needsUpdate = true;
     this.instance.instanceMatrix.needsUpdate = true;
     this.instance.computeBoundingSphere();
+  }
+
+  public addBlockInstance(pos: TerrainPosition) {
+    const block = this.getBlock(pos);
+    if (!block || block.id === blocks.empty.id || block.instanceId) return;
+    const blocksArray = Object.values(blocks);
+    const matrix = new THREE.Matrix4();
+    const instanceId = this.instance.count++;
+    this.setBlockInstanceId(pos, instanceId);
+    matrix.setPosition(pos.x, pos.y, pos.z);
+    this.instance.setMatrixAt(instanceId, matrix);
+    const blockData = blocksArray.find(({ id }) => block.id === id)!;
+    this.instance.geometry.attributes.textureID.setX(
+      instanceId,
+      blockData.textureIndex
+    );
+  }
+
+  private removeBlockInstance(pos: TerrainPosition) {
+    const block = this.getBlock(pos);
+    if (!block || block.id === blocks.empty.id || !block.instanceId) return;
+    const matrix = new THREE.Matrix4();
+    this.instance.getMatrixAt(this.instance.count - 1, matrix);
+    this.instance.setMatrixAt(block.instanceId, matrix);
+
+    this.instance.geometry.attributes.textureID.setX(
+      block.instanceId,
+      this.instance.geometry.attributes.textureID.getX(this.instance.count - 1)
+    );
+
+    this.instance.count--;
+    this.setBlockInstanceId(pos, null);
+    this.setBlockInstanceId(
+      new THREE.Vector3().applyMatrix4(matrix),
+      block.instanceId
+    );
   }
 
   public setParams(params: TerrainParams) {

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import {
   blockGeometry,
   blockMaterialUniforms,
+  blocks,
   blockTextures,
   selectedBlockMaterial,
 } from "./Blocks";
@@ -9,6 +10,7 @@ import { Terrain, TerrainParams, TerrainPosition } from "./Terrain";
 import { Loader } from "../Engine/Loader";
 
 const matrix = new THREE.Matrix4();
+const normal = new THREE.Vector3();
 
 export type WorldParams = TerrainParams & {
   chunkDistance: number;
@@ -23,6 +25,7 @@ export class World extends THREE.Group {
   private idleAdding: ChunkCoords[] = [];
   public selectedBlock: THREE.Mesh;
   private lastPlayerPosition = new THREE.Vector3();
+  private activeBlock = blocks.grass.id;
 
   constructor(params: WorldParams, loader: Loader) {
     super();
@@ -159,6 +162,9 @@ export class World extends THREE.Group {
     this.selectedBlock.position.copy(
       chunk.instance.position.clone().applyMatrix4(matrix)
     );
+    if (this.activeBlock !== blocks.empty.id) {
+      this.selectedBlock.position.add(intersection.normal ?? normal);
+    }
     this.selectedBlock.visible = true;
   }
 
@@ -166,10 +172,22 @@ export class World extends THREE.Group {
     this.selectedBlock.visible = false;
   }
 
-  public removeBlock() {
+  public submitBlock() {
     if (!this.selectedBlock.visible) return;
     const coords = this.worldCoordsToChunkCoords(this.selectedBlock.position);
     const chunk = this.getChunk(coords.chunkCoords.x, coords.chunkCoords.z);
-    if (chunk) chunk.removeBlock(coords.blockCoords);
+    if (!chunk) return;
+    if (this.activeBlock === blocks.empty.id) {
+      chunk.removeBlock(coords.blockCoords);
+    } else {
+      chunk.addBlock(coords.blockCoords, this.activeBlock);
+    }
+  }
+
+  public setActiveBlock(keyCode: string) {
+    const block = Object.values(blocks).find(
+      (block) => block.keyCode === keyCode
+    );
+    if (block) this.activeBlock = block.id;
   }
 }

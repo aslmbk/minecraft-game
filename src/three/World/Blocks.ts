@@ -5,6 +5,7 @@ type Block<T extends string> = {
   name: T;
   color: string | number;
   textureIndex: number;
+  keyCode: string;
 };
 
 export const blockNames = [
@@ -37,36 +38,42 @@ export const blocks: BlocksInterface = {
     name: "empty",
     color: "transparent",
     textureIndex: -1,
+    keyCode: "Digit0",
   },
   grass: {
     id: 1,
     name: "grass",
     color: 0x559020,
     textureIndex: 0,
+    keyCode: "Digit1",
   },
   dirt: {
     id: 3,
     name: "dirt",
     color: 0x807020,
     textureIndex: 2,
+    keyCode: "Digit2",
   },
   stone: {
     id: 4,
     name: "stone",
     color: 0x808080,
     textureIndex: 3,
+    keyCode: "Digit3",
   },
   coal: {
     id: 5,
     name: "coal",
     color: 0x202020,
     textureIndex: 4,
+    keyCode: "Digit4",
   },
   iron: {
     id: 6,
     name: "iron",
     color: 0x806060,
     textureIndex: 5,
+    keyCode: "Digit5",
   },
 };
 

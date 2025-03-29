@@ -64,6 +64,7 @@ export class Game extends Engine {
     this.viewport.events.on("change", this.resize.bind(this));
     this.inputs.events.on("keydown", (params) => {
       this.player.keyDownHandler(params);
+      this.world.setActiveBlock(params.event.code);
     });
     this.inputs.events.on("keyup", (params) => {
       this.player.keyUpHandler(params);
@@ -72,7 +73,7 @@ export class Game extends Engine {
       this.controls.object.position.add(cameraPosition);
     });
     this.cursor.events.on("click", () => {
-      if (this.player.isActive) this.world.removeBlock();
+      if (this.player.isActive) this.world.submitBlock();
     });
 
     this.debugController = new DebugController(this);
