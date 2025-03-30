@@ -31,9 +31,9 @@ export class Config {
 
   worldParams: WorldParams = {
     seed: 100,
-    chunkDistance: 1,
+    chunkDistance: 9,
     world: {
-      width: 64,
+      width: 10,
       height: 32,
     },
     terrain: {

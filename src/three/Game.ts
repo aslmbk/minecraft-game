@@ -40,11 +40,7 @@ export class Game extends Engine {
     this.renderer.shadowMap.enabled = true;
     this.camera.position.copy(cameraPosition);
     this.pointerLockCamera.position.copy(cameraPosition);
-    this.scene.fog = new THREE.Fog(
-      this.config.clearColor,
-      this.config.worldParams.world.width,
-      this.config.worldParams.world.width * 1.3
-    );
+    this.scene.fog = new THREE.Fog(this.config.clearColor, 64, 64 * 1.3);
     this.stats.activate("2");
 
     this.lights = new Lights(this.config.lights);
