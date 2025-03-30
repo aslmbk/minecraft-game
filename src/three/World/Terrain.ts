@@ -2,6 +2,7 @@ import { blocks, blockGeometry, blockMaterial } from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
 import * as THREE from "three";
+import { ActionsStore } from "./ActionsStore";
 
 export type TerrainType = {
   id: number;
@@ -56,6 +57,7 @@ export class Terrain {
     this.initialize();
     this.generateResources(position);
     this.generateTerrain(position);
+    this.generateActions(position);
     this.generateMeshes();
   }
 
@@ -139,6 +141,10 @@ export class Terrain {
         }
       }
     }
+  }
+
+  private generateActions(position: TerrainPosition) {
+    new ActionsStore().forEachBlock(position, this.setBlockId.bind(this));
   }
 
   private generateMeshes() {
@@ -273,15 +279,15 @@ export class Terrain {
     if (!block || block.id === blocks.empty.id || block.instanceId) return;
     const blocksArray = Object.values(blocks);
     const matrix = new THREE.Matrix4();
-    const instanceId = this.instance.count++;
-    this.setBlockInstanceId(pos, instanceId);
     matrix.setPosition(pos.x, pos.y, pos.z);
+    const instanceId = this.instance.count++;
     this.instance.setMatrixAt(instanceId, matrix);
     const blockData = blocksArray.find(({ id }) => block.id === id)!;
     this.instance.geometry.attributes.textureID.setX(
       instanceId,
       blockData.textureIndex
     );
+    this.setBlockInstanceId(pos, instanceId);
   }
 
   private removeBlockInstance(pos: TerrainPosition) {
@@ -297,11 +303,11 @@ export class Terrain {
     );
 
     this.instance.count--;
-    this.setBlockInstanceId(pos, null);
     this.setBlockInstanceId(
       new THREE.Vector3().applyMatrix4(matrix),
       block.instanceId
     );
+    this.setBlockInstanceId(pos, null);
   }
 
   public setParams(params: TerrainParams) {

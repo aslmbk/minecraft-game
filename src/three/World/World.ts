@@ -8,6 +8,7 @@ import {
 } from "./Blocks";
 import { Terrain, TerrainParams, TerrainPosition } from "./Terrain";
 import { Loader } from "../Engine/Loader";
+import { ActionsStore } from "./ActionsStore";
 
 const matrix = new THREE.Matrix4();
 const normal = new THREE.Vector3();
@@ -44,6 +45,7 @@ export class World extends THREE.Group {
     playerPosition?: THREE.Vector3;
     force?: boolean;
   } = {}) {
+    if (force) new ActionsStore().clear();
     const playerPos = playerPosition ?? this.lastPlayerPosition;
     const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
@@ -182,6 +184,11 @@ export class World extends THREE.Group {
     } else {
       chunk.addBlock(coords.blockCoords, this.activeBlock);
     }
+    new ActionsStore().commit(
+      { x: coords.chunkCoords.x, y: 0, z: coords.chunkCoords.z },
+      coords.blockCoords,
+      this.activeBlock
+    );
   }
 
   public setActiveBlock(keyCode: string) {
