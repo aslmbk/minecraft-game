@@ -59,9 +59,7 @@ export class Loader {
     );
   }
 
-  public async loadGLTFAsync(
-    options: Pick<GLTFLoaderOptions, "url" | "onProgress">
-  ) {
+  public loadGLTFAsync(options: Pick<GLTFLoaderOptions, "url" | "onProgress">) {
     return this.gltfLoader.loadAsync(options.url, options.onProgress);
   }
 

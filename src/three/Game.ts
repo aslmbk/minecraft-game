@@ -1,7 +1,7 @@
 import { Engine } from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
-import { World } from "./World";
+import { World, blockTextures, blockMaterialUniforms } from "./World";
 import { Config } from "./Config";
 import { DebugController } from "./DebugController";
 import { Player } from "./Player";
@@ -22,6 +22,12 @@ export class Game extends Engine {
 
   constructor(domElement: HTMLElement) {
     super({ domElement, autoRender: false });
+    this.config = new Config();
+
+    this.renderer.setClearColor(this.config.clearColor);
+    this.renderer.shadowMap.enabled = true;
+    this.scene.fog = new THREE.Fog(this.config.clearColor, 64, 64 * 1.3);
+
     this.pointerLockCamera = new THREE.PerspectiveCamera(
       75,
       this.viewport.ratio,
@@ -34,26 +40,21 @@ export class Game extends Engine {
     );
     this.scene.add(this.pointerLockCamera);
     this.rays.updateCamera(this.pointerLockCamera);
-    this.config = new Config();
-
-    this.renderer.setClearColor(this.config.clearColor);
-    this.renderer.shadowMap.enabled = true;
     this.camera.position.copy(cameraPosition);
     this.pointerLockCamera.position.copy(cameraPosition);
-    this.scene.fog = new THREE.Fog(this.config.clearColor, 64, 64 * 1.3);
-    this.stats.activate("2");
 
     this.lights = new Lights(this.config.lights);
-    this.world = new World(this.config.worldParams, this.loader);
+    this.scene.add(this.lights);
+
+    this.world = new World(this.config.worldParams);
+    this.scene.add(this.world);
+    this.scene.add(this.world.selectedBlock);
+
     this.player = new Player(
       this.config.playerConfig,
       this.pointerLockControls,
       this.world
     );
-
-    this.scene.add(this.world);
-    this.scene.add(this.world.selectedBlock);
-    this.scene.add(this.lights);
     // this.scene.add(this.player.createBoundsHelper());
 
     this.time.events.on("tick", this.update.bind(this));
@@ -73,6 +74,9 @@ export class Game extends Engine {
     });
 
     this.debugController = new DebugController(this);
+    this.stats.activate("2");
+
+    this.loadTextures();
   }
 
   public update({ delta }: { delta: number }) {
@@ -99,5 +103,14 @@ export class Game extends Engine {
   public resize({ ratio }: { ratio: number }) {
     this.pointerLockCamera.aspect = ratio;
     this.pointerLockCamera.updateProjectionMatrix();
+  }
+
+  private loadTextures() {
+    this.loader.loadTextureAtlas(blockTextures).then((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      blockMaterialUniforms.uTextureAtlas.value = texture;
+    });
   }
 }

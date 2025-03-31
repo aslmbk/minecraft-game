@@ -1,13 +1,6 @@
 import * as THREE from "three";
-import {
-  blockGeometry,
-  blockMaterialUniforms,
-  blocks,
-  blockTextures,
-  selectedBlockMaterial,
-} from "./Blocks";
+import { blockGeometry, blocks, selectedBlockMaterial } from "./Blocks";
 import { Terrain, TerrainParams, TerrainPosition } from "./Terrain";
-import { Loader } from "../Engine/Loader";
 import { ActionsStore } from "./ActionsStore";
 
 const matrix = new THREE.Matrix4();
@@ -22,17 +15,14 @@ type ChunkCoords = { x: number; z: number };
 export class World extends THREE.Group {
   private params: WorldParams;
   public chunks: Terrain[] = [];
-  private loader: Loader;
   private idleAdding: ChunkCoords[] = [];
   public selectedBlock: THREE.Mesh;
   private lastPlayerPosition = new THREE.Vector3();
   private activeBlock = blocks.grass.id;
 
-  constructor(params: WorldParams, loader: Loader) {
+  constructor(params: WorldParams) {
     super();
     this.params = params;
-    this.loader = loader;
-    this.loadTextures();
     this.selectedBlock = new THREE.Mesh(blockGeometry, selectedBlockMaterial);
     this.selectedBlock.scale.multiplyScalar(1.01);
     this.selectedBlock.visible = false;
@@ -102,15 +92,6 @@ export class World extends THREE.Group {
     chunk.instance.userData = { x, z };
     this.add(chunk.instance);
     this.chunks.push(chunk);
-  }
-
-  private loadTextures() {
-    this.loader.loadTextureAtlas(blockTextures).then((texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.NearestFilter;
-      texture.magFilter = THREE.NearestFilter;
-      blockMaterialUniforms.uTextureAtlas.value = texture;
-    });
   }
 
   public setParams(params: WorldParams) {

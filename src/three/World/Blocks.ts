@@ -26,9 +26,9 @@ export const blockTextures = [
   "textures/iron_ore.png",
 ];
 
-export type BlockNameType = (typeof blockNames)[number];
+type BlockNameType = (typeof blockNames)[number];
 
-export type BlocksInterface = {
+type BlocksInterface = {
   [K in BlockNameType]: Block<K>;
 };
 
