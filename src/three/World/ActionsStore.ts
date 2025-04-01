@@ -37,6 +37,13 @@ export class ActionsStore {
     }
   }
 
+  public get(chunkCoords: CoordsType, blockCoords: CoordsType) {
+    const key = this.getKeyFromCoords(chunkCoords);
+    const blockKey = this.getKeyFromCoords(blockCoords);
+    if (!this.data[key] || !this.data[key][blockKey]) return null;
+    return this.data[key][blockKey];
+  }
+
   private getKeyFromCoords(coords: CoordsType) {
     return `${coords.x}-${coords.y}-${coords.z}`;
   }

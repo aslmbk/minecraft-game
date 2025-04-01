@@ -15,6 +15,10 @@ export const blockNames = [
   "stone",
   "coal",
   "iron",
+  "leaves",
+  "tree",
+  "sand",
+  "cloud",
 ] as const;
 
 export const blockTextures = [
@@ -24,7 +28,12 @@ export const blockTextures = [
   "textures/stone.png",
   "textures/coal_ore.png",
   "textures/iron_ore.png",
-];
+  "textures/leaves.png",
+  "textures/tree_top.png",
+  "textures/tree_side.png",
+  "textures/sand.png",
+  "textures/snow.png",
+] as const;
 
 type BlockNameType = (typeof blockNames)[number];
 
@@ -74,6 +83,34 @@ export const blocks: BlocksInterface = {
     color: 0x806060,
     textureIndex: 5,
     keyCode: "Digit5",
+  },
+  leaves: {
+    id: 7,
+    name: "leaves",
+    color: 0x808080,
+    textureIndex: 6,
+    keyCode: "Digit6",
+  },
+  tree: {
+    id: 8,
+    name: "tree",
+    color: 0x808080,
+    textureIndex: 7,
+    keyCode: "Digit7",
+  },
+  sand: {
+    id: 9,
+    name: "sand",
+    color: 0x808080,
+    textureIndex: 9,
+    keyCode: "Digit8",
+  },
+  cloud: {
+    id: 10,
+    name: "cloud",
+    color: 0xf0f0f0,
+    textureIndex: 10,
+    keyCode: "",
   },
 };
 
@@ -131,10 +168,12 @@ blockMaterial.onBeforeCompile = (shader) => {
     int textureID = int(round(vTextureID));
     vec3 nNormal = normalize(vObjectNormal);
     vec4 blockColor = texture(uTextureAtlas, vec3(vUv, textureID));
+    bool isTop = dot(nNormal, vec3(0.0, 1.0, 0.0)) > 0.5;
+    bool isBottom = dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5;
     if (textureID == ${blocks.grass.textureIndex}) {
-      if (dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5) {
+      if (isBottom) {
         blockColor = texture(uTextureAtlas, vec3(vUv, ${blocks.dirt.textureIndex}));
-      } else if (dot(nNormal, vec3(0.0, 1.0, 0.0)) < 0.5) {
+      } else if (!isTop) {
         blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
       }
     }

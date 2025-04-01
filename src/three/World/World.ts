@@ -36,6 +36,7 @@ export class World extends THREE.Group {
     force?: boolean;
   } = {}) {
     if (force) new ActionsStore().clear();
+    this.idleAdding = [];
     const playerPos = playerPosition ?? this.lastPlayerPosition;
     const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
@@ -72,13 +73,8 @@ export class World extends THREE.Group {
         return;
       }
       this.idleAdding.push(coords);
-      Promise.resolve().then(() => {
-        this.addChunk(coords);
-        this.idleAdding = this.idleAdding.filter(
-          (c) => c.x !== coords.x && c.z !== coords.z
-        );
-      });
     });
+    this.addChunks();
   }
 
   private addChunk({ x, z }: ChunkCoords) {
@@ -92,6 +88,26 @@ export class World extends THREE.Group {
     chunk.instance.userData = { x, z };
     this.add(chunk.instance);
     this.chunks.push(chunk);
+    return chunk;
+  }
+
+  private async addChunks() {
+    if (!this.idleAdding.length) return;
+    const lastChunks = await Promise.all(
+      this.idleAdding.map((coords) => this.addChunk(coords))
+    );
+    await Promise.all(
+      lastChunks.map((chunk) =>
+        chunk.generateActions({
+          x: chunk.instance.userData.x,
+          y: 0,
+          z: chunk.instance.userData.z,
+        })
+      )
+    );
+    await Promise.all(lastChunks.map((chunk) => chunk.generateMeshes()));
+
+    this.idleAdding = [];
   }
 
   public setParams(params: WorldParams) {
