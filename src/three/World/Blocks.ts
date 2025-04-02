@@ -3,8 +3,7 @@ import * as THREE from "three";
 type Block<T extends string> = {
   id: number;
   name: T;
-  color: string | number;
-  textureIndex: number;
+  material: THREE.Material | THREE.MeshLambertMaterial[] | null;
   keyCode: string;
 };
 
@@ -21,163 +20,133 @@ export const blockNames = [
   "cloud",
 ] as const;
 
-export const blockTextures = [
-  "textures/grass.png",
-  "textures/grass_side.png",
-  "textures/dirt.png",
-  "textures/stone.png",
-  "textures/coal_ore.png",
-  "textures/iron_ore.png",
-  "textures/leaves.png",
-  "textures/tree_top.png",
-  "textures/tree_side.png",
-  "textures/sand.png",
-  "textures/snow.png",
-];
+export const blockTextures = {
+  grass: { url: "textures/grass.png", texture: new THREE.Texture() },
+  grassSide: { url: "textures/grass_side.png", texture: new THREE.Texture() },
+  dirt: { url: "textures/dirt.png", texture: new THREE.Texture() },
+  stone: { url: "textures/stone.png", texture: new THREE.Texture() },
+  coalOre: { url: "textures/coal_ore.png", texture: new THREE.Texture() },
+  ironOre: { url: "textures/iron_ore.png", texture: new THREE.Texture() },
+  leaves: { url: "textures/leaves.png", texture: new THREE.Texture() },
+  treeTop: { url: "textures/tree_top.png", texture: new THREE.Texture() },
+  treeSide: { url: "textures/tree_side.png", texture: new THREE.Texture() },
+  sand: { url: "textures/sand.png", texture: new THREE.Texture() },
+  snow: { url: "textures/snow.png", texture: new THREE.Texture() },
+};
 
-type BlockNameType = (typeof blockNames)[number];
+const blockMaterials = {
+  grass: new THREE.MeshLambertMaterial({ map: blockTextures.grass.texture }),
+  grassSide: new THREE.MeshLambertMaterial({
+    map: blockTextures.grassSide.texture,
+  }),
+  dirt: new THREE.MeshLambertMaterial({ map: blockTextures.dirt.texture }),
+  stone: new THREE.MeshLambertMaterial({ map: blockTextures.stone.texture }),
+  coalOre: new THREE.MeshLambertMaterial({
+    map: blockTextures.coalOre.texture,
+  }),
+  ironOre: new THREE.MeshLambertMaterial({
+    map: blockTextures.ironOre.texture,
+  }),
+  leaves: new THREE.MeshLambertMaterial({
+    map: blockTextures.leaves.texture,
+    alphaMap: blockTextures.leaves.texture,
+    transparent: true,
+  }),
+  treeTop: new THREE.MeshLambertMaterial({
+    map: blockTextures.treeTop.texture,
+  }),
+  treeSide: new THREE.MeshLambertMaterial({
+    map: blockTextures.treeSide.texture,
+  }),
+  sand: new THREE.MeshLambertMaterial({ map: blockTextures.sand.texture }),
+  snow: new THREE.MeshLambertMaterial({ map: blockTextures.snow.texture }),
+};
 
 type BlocksInterface = {
-  [K in BlockNameType]: Block<K>;
+  [K in (typeof blockNames)[number]]: Block<K>;
 };
 
 export const blocks: BlocksInterface = {
   empty: {
     id: 0,
     name: "empty",
-    color: "transparent",
-    textureIndex: -1,
+    material: null,
     keyCode: "Digit0",
   },
   grass: {
     id: 1,
     name: "grass",
-    color: 0x559020,
-    textureIndex: 0,
+    material: [
+      blockMaterials.grassSide,
+      blockMaterials.grassSide,
+      blockMaterials.grass,
+      blockMaterials.dirt,
+      blockMaterials.grassSide,
+      blockMaterials.grassSide,
+    ],
     keyCode: "Digit1",
   },
   dirt: {
     id: 3,
     name: "dirt",
-    color: 0x807020,
-    textureIndex: 2,
+    material: blockMaterials.dirt,
     keyCode: "Digit2",
   },
   stone: {
     id: 4,
     name: "stone",
-    color: 0x808080,
-    textureIndex: 3,
+    material: blockMaterials.stone,
     keyCode: "Digit3",
   },
   coal: {
     id: 5,
     name: "coal",
-    color: 0x202020,
-    textureIndex: 4,
+    material: blockMaterials.coalOre,
     keyCode: "Digit4",
   },
   iron: {
     id: 6,
     name: "iron",
-    color: 0x806060,
-    textureIndex: 5,
+    material: blockMaterials.ironOre,
     keyCode: "Digit5",
   },
   leaves: {
     id: 7,
     name: "leaves",
-    color: 0x808080,
-    textureIndex: 6,
+    material: blockMaterials.leaves,
     keyCode: "Digit6",
   },
   tree: {
     id: 8,
     name: "tree",
-    color: 0x808080,
-    textureIndex: 7,
+    material: [
+      blockMaterials.treeSide,
+      blockMaterials.treeSide,
+      blockMaterials.treeTop,
+      blockMaterials.treeTop,
+      blockMaterials.treeSide,
+      blockMaterials.treeSide,
+    ],
     keyCode: "Digit7",
   },
   sand: {
     id: 9,
     name: "sand",
-    color: 0x808080,
-    textureIndex: 9,
+    material: blockMaterials.sand,
     keyCode: "Digit8",
   },
   cloud: {
     id: 10,
     name: "cloud",
-    color: 0xf0f0f0,
-    textureIndex: 10,
+    material: blockMaterials.snow,
     keyCode: "",
   },
 };
 
 export const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
-export const blockMaterial = new THREE.MeshLambertMaterial({
-  color: 0xffffff,
-});
-
-export const textureAtlas = new THREE.Uniform<THREE.Texture>(
-  null as unknown as THREE.Texture
-);
 
 export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffaa,
   transparent: true,
   opacity: 0.3,
 });
-
-blockMaterial.onBeforeCompile = (shader) => {
-  shader.uniforms = {
-    ...shader.uniforms,
-    uTextureAtlas: textureAtlas,
-  };
-
-  shader.defines ??= {};
-  shader.defines.USE_UV = true;
-
-  shader.vertexShader = shader.vertexShader.replace(
-    /* glsl */ `#define LAMBERT`,
-    /* glsl */ `#define LAMBERT
-    attribute float textureID;
-    varying float vTextureID;
-    varying vec3 vObjectNormal;
-    `
-  );
-  shader.vertexShader = shader.vertexShader.replace(
-    /* glsl */ `vViewPosition = - mvPosition.xyz;`,
-    /* glsl */ `vViewPosition = - mvPosition.xyz;
-    vTextureID = textureID;
-    vObjectNormal = normal;
-    `
-  );
-
-  shader.fragmentShader = shader.fragmentShader.replace(
-    /* glsl */ `#define LAMBERT`,
-    /* glsl */ `#define LAMBERT
-    uniform sampler2DArray uTextureAtlas;
-    varying float vTextureID;
-    varying vec3 vObjectNormal;
-    `
-  );
-  shader.fragmentShader = shader.fragmentShader.replace(
-    /* glsl */ `#include <map_fragment>`,
-    /* glsl */ `#include <map_fragment>
-    int textureID = int(round(vTextureID));
-    vec3 nNormal = normalize(vObjectNormal);
-    vec4 blockColor = texture(uTextureAtlas, vec3(vUv, textureID));
-    bool isTop = dot(nNormal, vec3(0.0, 1.0, 0.0)) > 0.5;
-    bool isBottom = dot(nNormal, vec3(0.0, -1.0, 0.0)) > 0.5;
-    if (textureID == ${blocks.grass.textureIndex}) {
-      if (isBottom) {
-        blockColor = texture(uTextureAtlas, vec3(vUv, ${blocks.dirt.textureIndex}));
-      } else if (!isTop) {
-        blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
-      }
-    }
-    diffuseColor *= blockColor;
-    `
-  );
-};
