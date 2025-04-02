@@ -38,6 +38,7 @@ export class World extends THREE.Group {
     if (force) new ActionsStore().clear();
     this.idleAdding = [];
     const playerPos = playerPosition ?? this.lastPlayerPosition;
+    this.lastPlayerPosition.copy(playerPos);
     const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
     for (

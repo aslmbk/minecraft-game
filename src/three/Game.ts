@@ -1,7 +1,7 @@
 import { Engine } from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
-import { World, blockTextures, blockMaterialUniforms } from "./World";
+import { World, blockTextures, textureAtlas } from "./World";
 import { Config } from "./Config";
 import { DebugController } from "./DebugController";
 import { Player } from "./Player";
@@ -110,7 +110,7 @@ export class Game extends Engine {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
-      blockMaterialUniforms.uTextureAtlas.value = texture;
+      textureAtlas.value = texture;
     });
   }
 }

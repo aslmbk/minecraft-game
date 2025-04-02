@@ -33,7 +33,7 @@ export const blockTextures = [
   "textures/tree_side.png",
   "textures/sand.png",
   "textures/snow.png",
-] as const;
+];
 
 type BlockNameType = (typeof blockNames)[number];
 
@@ -118,11 +118,11 @@ export const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
 export const blockMaterial = new THREE.MeshLambertMaterial({
   color: 0xffffff,
 });
-export const blockMaterialUniforms = {
-  uTextureAtlas: new THREE.Uniform<THREE.Texture>(
-    null as unknown as THREE.Texture
-  ),
-};
+
+export const textureAtlas = new THREE.Uniform<THREE.Texture>(
+  null as unknown as THREE.Texture
+);
+
 export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffaa,
   transparent: true,
@@ -132,7 +132,7 @@ export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
 blockMaterial.onBeforeCompile = (shader) => {
   shader.uniforms = {
     ...shader.uniforms,
-    ...blockMaterialUniforms,
+    uTextureAtlas: textureAtlas,
   };
 
   shader.defines ??= {};
