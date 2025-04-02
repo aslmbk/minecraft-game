@@ -43,6 +43,7 @@ export type TerrainParams = {
     canopy: {
       minRadius: number;
       maxRadius: number;
+      density: number;
     };
   };
 };
@@ -198,21 +199,22 @@ export class Terrain {
 
   private generateTrees() {
     const noiseGenerator = new SimplexNoise(this.rng);
-    for (let x = 0; x < this.params.world.width; x++) {
-      for (let z = 0; z < this.params.world.width; z++) {
-        const value = noiseGenerator.noise(
-          x + this.worldCoords.x,
-          z + this.worldCoords.z
-        );
-        if (value < this.params.trees.frequency) continue;
+    const offset = this.params.trees.canopy.maxRadius;
+    for (let x = offset; x < this.params.world.width - offset; x++) {
+      for (let z = offset; z < this.params.world.width - offset; z++) {
+        const n =
+          noiseGenerator.noise(x + this.worldCoords.x, z + this.worldCoords.z) *
+            0.5 +
+          0.5;
+        if (n > this.params.trees.frequency) continue;
         const h = Math.round(
-          value *
+          this.rng.random() *
             (this.params.trees.trunk.maxHeight -
               this.params.trees.trunk.minHeight) +
             this.params.trees.trunk.minHeight
         );
         const r = Math.round(
-          value *
+          this.rng.random() *
             (this.params.trees.canopy.maxRadius -
               this.params.trees.canopy.minRadius) +
             this.params.trees.canopy.minRadius
@@ -222,6 +224,23 @@ export class Terrain {
           this.setBlockId({ x, y: height + i, z }, blocks.tree.id);
         }
         this.treeData.push({ x, y: height, z, h, r });
+        for (let rx = -r; rx <= r; rx++) {
+          for (let ry = -r; ry <= r; ry++) {
+            for (let rz = -r; rz <= r; rz++) {
+              const relDist = (rx * rx + ry * ry + rz * rz) / (r * r);
+              const pos = { x: x + rx, y: height + h + ry, z: z + rz };
+              if (
+                relDist >= 1 ||
+                this.getBlock(pos)?.id !== blocks.empty.id ||
+                this.rng.random() >
+                  (1 - relDist) * this.params.trees.canopy.density
+              ) {
+                continue;
+              }
+              this.setBlockId(pos, blocks.leaves.id);
+            }
+          }
+        }
       }
     }
   }

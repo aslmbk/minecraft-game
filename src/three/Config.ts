@@ -30,10 +30,10 @@ export class Config {
   };
 
   worldParams: WorldParams = {
-    seed: 100,
-    chunkDistance: 9,
+    seed: 1,
+    chunkDistance: 4,
     world: {
-      width: 10,
+      width: 21,
       height: 32,
     },
     terrain: {
@@ -56,7 +56,7 @@ export class Config {
       },
     },
     trees: {
-      frequency: 0.99,
+      frequency: 0.05,
       trunk: {
         minHeight: 4,
         maxHeight: 7,
@@ -64,6 +64,7 @@ export class Config {
       canopy: {
         minRadius: 2,
         maxRadius: 4,
+        density: 1.4,
       },
     },
   };
