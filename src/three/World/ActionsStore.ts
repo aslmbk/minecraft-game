@@ -40,7 +40,12 @@ export class ActionsStore {
   public get(chunkCoords: CoordsType, blockCoords: CoordsType) {
     const key = this.getKeyFromCoords(chunkCoords);
     const blockKey = this.getKeyFromCoords(blockCoords);
-    if (!this.data[key] || !this.data[key][blockKey]) return null;
+    if (
+      this.data[key] === undefined ||
+      this.data[key][blockKey] === undefined
+    ) {
+      return null;
+    }
     return this.data[key][blockKey];
   }
 

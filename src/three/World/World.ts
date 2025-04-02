@@ -92,8 +92,9 @@ export class World extends THREE.Group {
         return chunk;
       })
     );
+    await Promise.all(lastChunks.map((chunk) => chunk.generateMeshes()));
     await Promise.all(
-      lastChunks.map((chunk) => {
+      this.chunks.map((chunk) => {
         for (const tree of chunk.treeData) {
           for (let rx = -tree.r; rx <= tree.r; rx++) {
             for (let ry = -tree.r; ry <= tree.r; ry++) {
@@ -113,13 +114,13 @@ export class World extends THREE.Group {
                 const coords = this.worldCoordsToChunkCoords(pos);
                 const ch = this.getChunk(coords.chunkCoords);
                 if (
-                  ch?.getBlock(coords.blockCoords)?.id === blocks.empty.id &&
+                  ch &&
                   new ActionsStore().get(
                     { x: coords.chunkCoords.x, y: 0, z: coords.chunkCoords.z },
                     coords.blockCoords
                   ) === null
                 ) {
-                  ch.setBlockId(coords.blockCoords, blocks.leaves.id);
+                  ch.addBlock(coords.blockCoords, blocks.leaves.id);
                 }
               }
             }
@@ -127,7 +128,6 @@ export class World extends THREE.Group {
         }
       })
     );
-    await Promise.all(lastChunks.map((chunk) => chunk.generateMeshes()));
   }
 
   public setParams(params: WorldParams) {

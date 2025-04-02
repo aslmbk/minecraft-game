@@ -261,7 +261,7 @@ export class Terrain {
     return this.data[pos.x][pos.y][pos.z];
   }
 
-  public setBlockId(pos: Coords, id: number) {
+  private setBlockId(pos: Coords, id: number) {
     if (!this.inBounds(pos)) return;
     this.data[pos.x][pos.y][pos.z].id = id;
   }
@@ -298,7 +298,13 @@ export class Terrain {
       left !== blocks.empty.id &&
       right !== blocks.empty.id &&
       forward !== blocks.empty.id &&
-      back !== blocks.empty.id
+      back !== blocks.empty.id &&
+      up !== blocks.leaves.id &&
+      down !== blocks.leaves.id &&
+      left !== blocks.leaves.id &&
+      right !== blocks.leaves.id &&
+      forward !== blocks.leaves.id &&
+      back !== blocks.leaves.id
     );
   }
 

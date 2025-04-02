@@ -37,8 +37,8 @@ export class Config {
       height: 32,
     },
     terrain: {
-      scale: 30,
-      magnitude: 0.5,
+      scale: 80,
+      magnitude: 0.3,
       offset: 0.2,
     },
     blocks: {
