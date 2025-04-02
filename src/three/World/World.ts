@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { blockGeometry, blocks, selectedBlockMaterial } from "./Blocks";
-import { Terrain, TerrainParams, TerrainPosition } from "./Terrain";
+import { Terrain, TerrainParams, Coords, ChunkCoords } from "./Terrain";
 import { ActionsStore } from "./ActionsStore";
 
 const matrix = new THREE.Matrix4();
@@ -10,8 +10,6 @@ export type WorldParams = TerrainParams & {
   chunkDistance: number;
 };
 
-type ChunkCoords = { x: number; z: number };
-
 export class World extends THREE.Group {
   private params: WorldParams;
   public chunks: Terrain[] = [];
@@ -19,6 +17,7 @@ export class World extends THREE.Group {
   public selectedBlock: THREE.Mesh;
   private lastPlayerPosition = new THREE.Vector3();
   private activeBlock = blocks.grass.id;
+  private timeoutId: number | null = null;
 
   constructor(params: WorldParams) {
     super();
@@ -35,9 +34,10 @@ export class World extends THREE.Group {
     playerPosition?: THREE.Vector3;
     force?: boolean;
   } = {}) {
+    if (!this.idleAdding.length) return;
     if (force) new ActionsStore().clear();
-    this.idleAdding = [];
     const playerPos = playerPosition ?? this.lastPlayerPosition;
+    this.lastPlayerPosition.copy(playerPos);
     const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
     for (
@@ -67,55 +67,39 @@ export class World extends THREE.Group {
     });
     visibleChunksCoords.forEach((coords) => {
       if (
-        this.getChunk(coords.x, coords.z) ||
+        this.getChunk(coords) ||
         this.idleAdding.some((c) => c.x === coords.x && c.z === coords.z)
       ) {
         return;
       }
       this.idleAdding.push(coords);
     });
-    this.addChunks();
-  }
-
-  private addChunk({ x, z }: ChunkCoords) {
-    const position = {
-      x: x * this.params.world.width,
-      y: 0,
-      z: z * this.params.world.width,
-    };
-    const chunk = new Terrain(this.params, position);
-    chunk.instance.position.copy(position);
-    chunk.instance.userData = { x, z };
-    this.add(chunk.instance);
-    this.chunks.push(chunk);
-    return chunk;
+    if (this.idleAdding.length) {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
+      this.timeoutId = setTimeout(() => {
+        this.idleAdding = [];
+      }, 1000);
+      this.addChunks();
+    }
   }
 
   private async addChunks() {
-    if (!this.idleAdding.length) return;
     const lastChunks = await Promise.all(
-      this.idleAdding.map((coords) => this.addChunk(coords))
-    );
-    await Promise.all(
-      lastChunks.map((chunk) =>
-        chunk.generateActions({
-          x: chunk.instance.userData.x,
-          y: 0,
-          z: chunk.instance.userData.z,
-        })
-      )
+      this.idleAdding.map((coords) => {
+        const chunk = new Terrain(this.params, coords);
+        this.add(chunk.instance);
+        this.chunks.push(chunk);
+        return chunk;
+      })
     );
     await Promise.all(lastChunks.map((chunk) => chunk.generateMeshes()));
-
-    this.idleAdding = [];
   }
 
   public setParams(params: WorldParams) {
     this.params = params;
-    this.chunks.forEach((chunk) => chunk.setParams(params));
   }
 
-  private worldCoordsToChunkCoords(pos: TerrainPosition) {
+  private worldCoordsToChunkCoords(pos: Coords) {
     const chunkCoords = {
       x: Math.floor(pos.x / this.params.world.width),
       z: Math.floor(pos.z / this.params.world.width),
@@ -128,15 +112,18 @@ export class World extends THREE.Group {
     return { chunkCoords, blockCoords };
   }
 
-  private getChunk(x: number, z: number) {
+  private getChunk(coords: ChunkCoords) {
     return this.chunks.find((chunk) => {
-      return chunk.instance.userData.x === x && chunk.instance.userData.z === z;
+      return (
+        chunk.instance.userData.x === coords.x &&
+        chunk.instance.userData.z === coords.z
+      );
     });
   }
 
-  public getBlock(pos: TerrainPosition) {
+  public getBlock(pos: Coords) {
     const { chunkCoords, blockCoords } = this.worldCoordsToChunkCoords(pos);
-    const chunk = this.getChunk(chunkCoords.x, chunkCoords.z);
+    const chunk = this.getChunk(chunkCoords);
     if (!chunk) {
       return null;
     }
@@ -152,10 +139,7 @@ export class World extends THREE.Group {
   public intersectionHandler(
     intersection: THREE.Intersection<THREE.InstancedMesh>
   ) {
-    const chunk = this.getChunk(
-      intersection.object.userData.x,
-      intersection.object.userData.z
-    );
+    const chunk = this.getChunk(intersection.object.userData as ChunkCoords);
     if (!chunk) return;
     intersection.object.getMatrixAt(intersection.instanceId!, matrix);
     this.selectedBlock.position.copy(
@@ -174,7 +158,7 @@ export class World extends THREE.Group {
   public submitBlock() {
     if (!this.selectedBlock.visible) return;
     const coords = this.worldCoordsToChunkCoords(this.selectedBlock.position);
-    const chunk = this.getChunk(coords.chunkCoords.x, coords.chunkCoords.z);
+    const chunk = this.getChunk(coords.chunkCoords);
     if (!chunk) return;
     if (this.activeBlock === blocks.empty.id) {
       chunk.removeBlock(coords.blockCoords);

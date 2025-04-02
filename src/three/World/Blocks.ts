@@ -33,7 +33,7 @@ export const blockTextures = [
   "textures/tree_side.png",
   "textures/sand.png",
   "textures/snow.png",
-] as const;
+];
 
 type BlockNameType = (typeof blockNames)[number];
 
@@ -118,11 +118,8 @@ export const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
 export const blockMaterial = new THREE.MeshLambertMaterial({
   color: 0xffffff,
 });
-export const blockMaterialUniforms = {
-  uTextureAtlas: new THREE.Uniform<THREE.Texture>(
-    null as unknown as THREE.Texture
-  ),
-};
+export const uTextureAtlas = new THREE.Uniform<THREE.Texture | null>(null);
+
 export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffaa,
   transparent: true,
@@ -132,7 +129,7 @@ export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
 blockMaterial.onBeforeCompile = (shader) => {
   shader.uniforms = {
     ...shader.uniforms,
-    ...blockMaterialUniforms,
+    uTextureAtlas,
   };
 
   shader.defines ??= {};
@@ -176,6 +173,10 @@ blockMaterial.onBeforeCompile = (shader) => {
       } else if (!isTop) {
         blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
       }
+    } else if (textureID == ${blocks.leaves.textureIndex} && blockColor.a < 0.5) {
+      discard;
+    } else if (textureID == ${blocks.tree.textureIndex} && !isTop && !isBottom) {
+      blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
     }
     diffuseColor *= blockColor;
     `

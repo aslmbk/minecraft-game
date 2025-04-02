@@ -36,28 +36,36 @@ export type TerrainParams = {
   };
 };
 
-export type TerrainPosition = {
+export type Coords = {
   x: number;
   y: number;
   z: number;
 };
 
+export type ChunkCoords = Omit<Coords, "y">;
+
 export class Terrain {
   private rng: RNG;
   private params: TerrainParams;
-  public data: TerrainType[][][] = [];
-  public heights: number[][] = [];
+  private data: TerrainType[][][] = [];
+  private heights: number[][] = [];
+  private chunkCoords: ChunkCoords;
+  private worldCoords: Coords;
   public instance!: THREE.InstancedMesh;
 
-  constructor(
-    params: TerrainParams,
-    position: TerrainPosition = { x: 0, y: 0, z: 0 }
-  ) {
+  constructor(params: TerrainParams, chunkCoords: ChunkCoords) {
     this.params = params;
     this.rng = new RNG(this.params.seed);
+    this.chunkCoords = chunkCoords;
+    this.worldCoords = {
+      x: chunkCoords.x * this.params.world.width,
+      y: 0,
+      z: chunkCoords.z * this.params.world.width,
+    };
     this.initialize();
-    this.generateResources(position);
-    this.generateTerrain(position);
+    this.generateResources();
+    this.generateTerrain();
+    this.generateActions();
     this.initializeMeshes();
   }
 
@@ -79,7 +87,7 @@ export class Terrain {
     }
   }
 
-  private generateResources(position: TerrainPosition) {
+  private generateResources() {
     const resources = [
       {
         resource: blocks.stone,
@@ -103,9 +111,9 @@ export class Terrain {
         for (let z = 0; z < this.params.world.width; z++) {
           for (const resource of resources) {
             const value = noiseGenerator.noise3d(
-              (x + position.x) / resource.scale.x,
-              (y + position.y) / resource.scale.y,
-              (z + position.z) / resource.scale.z
+              (x + this.worldCoords.x) / resource.scale.x,
+              (y + this.worldCoords.y) / resource.scale.y,
+              (z + this.worldCoords.z) / resource.scale.z
             );
             if (value > resource.threshold) {
               this.setBlockId({ x, y, z }, resource.resource.id);
@@ -116,13 +124,13 @@ export class Terrain {
     }
   }
 
-  private generateTerrain(position: TerrainPosition) {
+  private generateTerrain() {
     const noiseGenerator = new SimplexNoise(this.rng);
     for (let x = 0; x < this.params.world.width; x++) {
       for (let z = 0; z < this.params.world.width; z++) {
         const value = noiseGenerator.noise(
-          (x + position.x) / this.params.terrain.scale,
-          (z + position.z) / this.params.terrain.scale
+          (x + this.worldCoords.x) / this.params.terrain.scale,
+          (z + this.worldCoords.z) / this.params.terrain.scale
         );
         const scaledNoise =
           this.params.terrain.offset + this.params.terrain.magnitude * value;
@@ -145,8 +153,11 @@ export class Terrain {
     }
   }
 
-  public generateActions(position: TerrainPosition) {
-    new ActionsStore().forEachBlock(position, this.setBlockId.bind(this));
+  private generateActions() {
+    new ActionsStore().forEachBlock(
+      { x: this.chunkCoords.x, y: 0, z: this.chunkCoords.z },
+      this.setBlockId.bind(this)
+    );
   }
 
   private initializeMeshes() {
@@ -166,6 +177,8 @@ export class Terrain {
     this.instance.count = 0;
     this.instance.castShadow = true;
     this.instance.receiveShadow = true;
+    this.instance.userData = this.chunkCoords;
+    this.instance.position.copy(this.worldCoords);
   }
 
   public generateMeshes() {
@@ -198,25 +211,25 @@ export class Terrain {
     this.instance.computeBoundingSphere();
   }
 
-  public getBlock(pos: TerrainPosition) {
+  public getBlock(pos: Coords) {
     if (!this.inBounds(pos)) return null;
     return this.data[pos.x][pos.y][pos.z];
   }
 
-  public setBlockId(pos: TerrainPosition, id: number) {
+  private setBlockId(pos: Coords, id: number) {
     if (!this.inBounds(pos)) return;
     this.data[pos.x][pos.y][pos.z].id = id;
   }
 
-  public setBlockInstanceId(
-    pos: TerrainPosition,
+  private setBlockInstanceId(
+    pos: Coords,
     instanceId: TerrainType["instanceId"]
   ) {
     if (!this.inBounds(pos)) return;
     this.data[pos.x][pos.y][pos.z].instanceId = instanceId;
   }
 
-  private inBounds({ x, y, z }: TerrainPosition) {
+  private inBounds({ x, y, z }: Coords) {
     return (
       x >= 0 &&
       x < this.params.world.width &&
@@ -227,7 +240,7 @@ export class Terrain {
     );
   }
 
-  public isBlockObscured({ x, y, z }: TerrainPosition) {
+  private isBlockObscured({ x, y, z }: Coords) {
     const up = this.getBlock({ x, y: y + 1, z })?.id ?? blocks.empty.id;
     const down = this.getBlock({ x, y: y - 1, z })?.id ?? blocks.empty.id;
     const left = this.getBlock({ x: x + 1, y, z })?.id ?? blocks.empty.id;
@@ -244,7 +257,7 @@ export class Terrain {
     );
   }
 
-  public removeBlock(pos: TerrainPosition) {
+  public removeBlock(pos: Coords) {
     const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || !block.instanceId) return;
     this.removeBlockInstance(pos);
@@ -262,7 +275,7 @@ export class Terrain {
     this.instance.computeBoundingSphere();
   }
 
-  public addBlock(pos: TerrainPosition, id: number) {
+  public addBlock(pos: Coords, id: number) {
     const block = this.getBlock(pos);
     if (!block || block.id !== blocks.empty.id) return;
     this.setBlockId(pos, id);
@@ -287,7 +300,7 @@ export class Terrain {
     this.instance.computeBoundingSphere();
   }
 
-  public addBlockInstance(pos: TerrainPosition) {
+  private addBlockInstance(pos: Coords) {
     const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || block.instanceId) return;
     const blocksArray = Object.values(blocks);
@@ -303,7 +316,7 @@ export class Terrain {
     this.setBlockInstanceId(pos, instanceId);
   }
 
-  private removeBlockInstance(pos: TerrainPosition) {
+  private removeBlockInstance(pos: Coords) {
     const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || !block.instanceId) return;
     const matrix = new THREE.Matrix4();
@@ -321,9 +334,5 @@ export class Terrain {
       block.instanceId
     );
     this.setBlockInstanceId(pos, null);
-  }
-
-  public setParams(params: TerrainParams) {
-    this.params = params;
   }
 }
