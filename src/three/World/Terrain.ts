@@ -1,4 +1,4 @@
-import { blocks, blockGeometry, blockNames } from "./Blocks";
+import { blocks, blockGeometry, blockMaterial } from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
 import * as THREE from "three";
@@ -34,6 +34,18 @@ export type TerrainParams = {
       threshold: number;
     };
   };
+  trees: {
+    frequency: number;
+    trunk: {
+      minHeight: number;
+      maxHeight: number;
+    };
+    canopy: {
+      minRadius: number;
+      maxRadius: number;
+      density: number;
+    };
+  };
 };
 
 export type Coords = {
@@ -48,53 +60,29 @@ export class Terrain {
   private rng: RNG;
   private params: TerrainParams;
   private data: TerrainType[][][] = [];
-  private instances: Record<string, THREE.InstancedMesh> = {};
+  private heights: number[][] = [];
   private chunkCoords: ChunkCoords;
   private worldCoords: Coords;
-  public meshes = new THREE.Group();
+  public instance!: THREE.InstancedMesh;
 
   constructor(params: TerrainParams, chunkCoords: ChunkCoords) {
     this.params = params;
+    this.rng = new RNG(this.params.seed);
     this.chunkCoords = chunkCoords;
     this.worldCoords = {
       x: chunkCoords.x * this.params.world.width,
       y: 0,
       z: chunkCoords.z * this.params.world.width,
     };
-    this.rng = new RNG(this.params.seed);
-    this.meshes.userData = chunkCoords;
-    this.meshes.position.copy(this.worldCoords);
+    this.initialize();
+    this.generateResources();
+    this.generateTerrain();
+    this.generateTrees();
+    this.generateActions();
     this.initializeMeshes();
   }
 
-  private initializeMeshes() {
-    const maxCount =
-      this.params.world.width *
-      this.params.world.height *
-      this.params.world.width;
-
-    for (const blockName of blockNames) {
-      const block = blocks[blockName];
-      if (!block.material) continue;
-      const instance = new THREE.InstancedMesh(
-        blockGeometry,
-        block.material,
-        maxCount
-      );
-      instance.castShadow = true;
-      instance.receiveShadow = true;
-      instance.count = 0;
-      instance.userData = {
-        blockId: block.id,
-        x: this.chunkCoords.x,
-        z: this.chunkCoords.z,
-      };
-      this.instances[block.id] = instance;
-      this.meshes.add(instance);
-    }
-  }
-
-  public initializeData() {
+  private initialize() {
     this.data = [];
     for (let x = 0; x < this.params.world.width; x++) {
       const slice: (typeof this.data)[number] = [];
@@ -112,7 +100,7 @@ export class Terrain {
     }
   }
 
-  public generateResources() {
+  private generateResources() {
     const resources = [
       {
         resource: blocks.stone,
@@ -149,7 +137,7 @@ export class Terrain {
     }
   }
 
-  public generateTerrain() {
+  private generateTerrain() {
     const noiseGenerator = new SimplexNoise(this.rng);
     for (let x = 0; x < this.params.world.width; x++) {
       for (let z = 0; z < this.params.world.width; z++) {
@@ -161,6 +149,8 @@ export class Terrain {
           this.params.terrain.offset + this.params.terrain.magnitude * value;
         let height = Math.floor(this.params.world.height * scaledNoise);
         height = Math.max(0, Math.min(height, this.params.world.height - 1));
+        this.heights[x] ??= [];
+        this.heights[x][z] = height;
         for (let y = 0; y < this.params.world.height; y++) {
           const pos = { x, y, z };
           const blockId = this.getBlock(pos)?.id;
@@ -176,36 +166,109 @@ export class Terrain {
     }
   }
 
-  public generateActions() {
+  private generateActions() {
     new ActionsStore().forEachBlock(
       { x: this.chunkCoords.x, y: 0, z: this.chunkCoords.z },
       this.setBlockId.bind(this)
     );
   }
 
+  private initializeMeshes() {
+    const maxCount =
+      this.params.world.width *
+      this.params.world.height *
+      this.params.world.width;
+
+    const geometry = blockGeometry.clone();
+    const textureIDAttribute = new THREE.InstancedBufferAttribute(
+      new Float32Array(maxCount),
+      1
+    );
+    geometry.setAttribute("textureID", textureIDAttribute);
+
+    this.instance = new THREE.InstancedMesh(geometry, blockMaterial, maxCount);
+    this.instance.count = 0;
+    this.instance.castShadow = true;
+    this.instance.receiveShadow = true;
+    this.instance.userData = this.chunkCoords;
+    this.instance.position.copy(this.worldCoords);
+  }
+
+  private generateTrees() {
+    const noiseGenerator = new SimplexNoise(this.rng);
+    const offset = this.params.trees.canopy.maxRadius;
+    for (let x = offset; x < this.params.world.width - offset; x++) {
+      for (let z = offset; z < this.params.world.width - offset; z++) {
+        const n =
+          noiseGenerator.noise(x + this.worldCoords.x, z + this.worldCoords.z) *
+            0.5 +
+          0.5;
+        if (n > this.params.trees.frequency) continue;
+        const h = Math.round(
+          this.rng.random() *
+            (this.params.trees.trunk.maxHeight -
+              this.params.trees.trunk.minHeight) +
+            this.params.trees.trunk.minHeight
+        );
+        const r = Math.round(
+          this.rng.random() *
+            (this.params.trees.canopy.maxRadius -
+              this.params.trees.canopy.minRadius) +
+            this.params.trees.canopy.minRadius
+        );
+        const height = this.heights[x][z];
+        for (let i = 1; i <= h; i++) {
+          this.setBlockId({ x, y: height + i, z }, blocks.tree.id);
+        }
+        for (let rx = -r; rx <= r; rx++) {
+          for (let ry = -r; ry <= r; ry++) {
+            for (let rz = -r; rz <= r; rz++) {
+              const relDist = (rx * rx + ry * ry + rz * rz) / (r * r);
+              const pos = { x: x + rx, y: height + h + ry, z: z + rz };
+              if (
+                relDist >= 1 ||
+                this.getBlock(pos)?.id !== blocks.empty.id ||
+                this.rng.random() >
+                  (1 - relDist) * this.params.trees.canopy.density
+              ) {
+                continue;
+              }
+              this.setBlockId(pos, blocks.leaves.id);
+            }
+          }
+        }
+      }
+    }
+  }
+
   public generateMeshes() {
+    const blocksArray = Object.values(blocks);
     const matrix = new THREE.Matrix4();
 
     for (let x = 0; x < this.params.world.width; x++) {
       for (let y = 0; y < this.params.world.height; y++) {
         for (let z = 0; z < this.params.world.width; z++) {
           const pos = { x, y, z };
-          const block = this.getBlock(pos);
-          const instance = this.instances[block?.id ?? ""];
-          if (!instance || this.isBlockObscured(pos)) continue;
-          const instanceId = instance.count++;
+          const blockId = this.getBlock(pos)?.id;
+          if (blockId === blocks.empty.id || this.isBlockObscured(pos)) {
+            continue;
+          }
+          const block = blocksArray.find((block) => block.id === blockId)!;
+          const instanceId = this.instance.count++;
           matrix.setPosition(x, y, z);
-          instance.setMatrixAt(instanceId, matrix);
+          this.instance.setMatrixAt(instanceId, matrix);
+          this.instance.geometry.attributes.textureID.setX(
+            instanceId,
+            block.textureIndex
+          );
           this.setBlockInstanceId(pos, instanceId);
         }
       }
     }
 
-    for (const instanceId in this.instances) {
-      const instance = this.instances[instanceId];
-      instance.instanceMatrix.needsUpdate = true;
-      instance.computeBoundingSphere();
-    }
+    this.instance.geometry.attributes.textureID.needsUpdate = true;
+    this.instance.instanceMatrix.needsUpdate = true;
+    this.instance.computeBoundingSphere();
   }
 
   public getBlock(pos: Coords) {
@@ -250,7 +313,13 @@ export class Terrain {
       left !== blocks.empty.id &&
       right !== blocks.empty.id &&
       forward !== blocks.empty.id &&
-      back !== blocks.empty.id
+      back !== blocks.empty.id &&
+      up !== blocks.leaves.id &&
+      down !== blocks.leaves.id &&
+      left !== blocks.leaves.id &&
+      right !== blocks.leaves.id &&
+      forward !== blocks.leaves.id &&
+      back !== blocks.leaves.id
     );
   }
 
@@ -266,6 +335,10 @@ export class Terrain {
     this.addBlockInstance({ x: pos.x, y: pos.y - 1, z: pos.z });
     this.addBlockInstance({ x: pos.x, y: pos.y, z: pos.z + 1 });
     this.addBlockInstance({ x: pos.x, y: pos.y, z: pos.z - 1 });
+
+    this.instance.geometry.attributes.textureID.needsUpdate = true;
+    this.instance.instanceMatrix.needsUpdate = true;
+    this.instance.computeBoundingSphere();
   }
 
   public addBlock(pos: Coords, id: number) {
@@ -287,37 +360,45 @@ export class Terrain {
         this.removeBlockInstance(blockCoord);
       }
     }
+
+    this.instance.geometry.attributes.textureID.needsUpdate = true;
+    this.instance.instanceMatrix.needsUpdate = true;
+    this.instance.computeBoundingSphere();
   }
 
   private addBlockInstance(pos: Coords) {
     const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || block.instanceId) return;
-    const instance = this.instances[block.id];
+    const blocksArray = Object.values(blocks);
     const matrix = new THREE.Matrix4();
     matrix.setPosition(pos.x, pos.y, pos.z);
-    const instanceId = instance.count++;
-    instance.setMatrixAt(instanceId, matrix);
+    const instanceId = this.instance.count++;
+    this.instance.setMatrixAt(instanceId, matrix);
+    const blockData = blocksArray.find(({ id }) => block.id === id)!;
+    this.instance.geometry.attributes.textureID.setX(
+      instanceId,
+      blockData.textureIndex
+    );
     this.setBlockInstanceId(pos, instanceId);
-
-    instance.instanceMatrix.needsUpdate = true;
-    instance.computeBoundingSphere();
   }
 
   private removeBlockInstance(pos: Coords) {
     const block = this.getBlock(pos);
     if (!block || block.id === blocks.empty.id || !block.instanceId) return;
-    const instance = this.instances[block.id];
     const matrix = new THREE.Matrix4();
-    instance.getMatrixAt(instance.count - 1, matrix);
-    instance.setMatrixAt(block.instanceId, matrix);
-    instance.count--;
+    this.instance.getMatrixAt(this.instance.count - 1, matrix);
+    this.instance.setMatrixAt(block.instanceId, matrix);
+
+    this.instance.geometry.attributes.textureID.setX(
+      block.instanceId,
+      this.instance.geometry.attributes.textureID.getX(this.instance.count - 1)
+    );
+
+    this.instance.count--;
     this.setBlockInstanceId(
       new THREE.Vector3().applyMatrix4(matrix),
       block.instanceId
     );
     this.setBlockInstanceId(pos, null);
-
-    instance.instanceMatrix.needsUpdate = true;
-    instance.computeBoundingSphere();
   }
 }

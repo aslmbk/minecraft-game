@@ -1,12 +1,11 @@
 import { Engine } from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
-import { World } from "./World";
+import { World, blockTextures, uTextureAtlas } from "./World";
 import { Config } from "./Config";
 import { DebugController } from "./DebugController";
 import { Player } from "./Player";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
-import { blockTextures } from "./World";
 
 const cameraPosition = new THREE.Vector3(32, 16, 32);
 const screenCenter = new THREE.Vector2(0, 0);
@@ -80,7 +79,7 @@ export class Game extends Engine {
     this.loadTextures();
   }
 
-  public update({ delta }: { delta: number }) {
+  private update({ delta }: { delta: number }) {
     let camera = this.camera;
     if (this.player.isActive) {
       camera = this.pointerLockCamera;
@@ -107,18 +106,11 @@ export class Game extends Engine {
   }
 
   private loadTextures() {
-    for (const { url, texture } of Object.values(blockTextures)) {
-      this.loader.loadTexture({
-        url,
-        onLoad: (t) => {
-          texture.copy(t);
-          t.dispose();
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.NearestFilter;
-          texture.magFilter = THREE.NearestFilter;
-          texture.needsUpdate = true;
-        },
-      });
-    }
+    this.loader.loadTextureAtlas(blockTextures).then((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      uTextureAtlas.value = texture;
+    });
   }
 }

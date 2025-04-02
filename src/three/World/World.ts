@@ -57,8 +57,8 @@ export class World extends THREE.Group {
       if (
         !visibleChunksCoords.some(
           (coord) =>
-            coord.x === chunk.meshes.userData.x &&
-            coord.z === chunk.meshes.userData.z
+            coord.x === chunk.instance.userData.x &&
+            coord.z === chunk.instance.userData.z
         ) ||
         force
       ) {
@@ -84,19 +84,15 @@ export class World extends THREE.Group {
   }
 
   private async addChunks() {
-    const chunks = await Promise.all(
+    const lastChunks = await Promise.all(
       this.idleAdding.map((coords) => {
         const chunk = new Terrain(this.params, coords);
-        this.add(chunk.meshes);
+        this.add(chunk.instance);
         this.chunks.push(chunk);
         return chunk;
       })
     );
-    await Promise.all(chunks.map((chunk) => chunk.initializeData()));
-    await Promise.all(chunks.map((chunk) => chunk.generateResources()));
-    await Promise.all(chunks.map((chunk) => chunk.generateTerrain()));
-    await Promise.all(chunks.map((chunk) => chunk.generateActions()));
-    await Promise.all(chunks.map((chunk) => chunk.generateMeshes()));
+    await Promise.all(lastChunks.map((chunk) => chunk.generateMeshes()));
   }
 
   public setParams(params: WorldParams) {
@@ -116,11 +112,11 @@ export class World extends THREE.Group {
     return { chunkCoords, blockCoords };
   }
 
-  private getChunk(chunkCoords: ChunkCoords) {
+  private getChunk(coords: ChunkCoords) {
     return this.chunks.find((chunk) => {
       return (
-        chunk.meshes.userData.x === chunkCoords.x &&
-        chunk.meshes.userData.z === chunkCoords.z
+        chunk.instance.userData.x === coords.x &&
+        chunk.instance.userData.z === coords.z
       );
     });
   }
@@ -135,8 +131,8 @@ export class World extends THREE.Group {
   }
 
   private deleteChunk(chunk: Terrain) {
-    this.remove(chunk.meshes);
-    chunk.meshes.clear();
+    this.remove(chunk.instance);
+    chunk.instance.geometry.dispose();
     this.chunks.splice(this.chunks.indexOf(chunk), 1);
   }
 
@@ -147,7 +143,7 @@ export class World extends THREE.Group {
     if (!chunk) return;
     intersection.object.getMatrixAt(intersection.instanceId!, matrix);
     this.selectedBlock.position.copy(
-      chunk.meshes.position.clone().applyMatrix4(matrix)
+      chunk.instance.position.clone().applyMatrix4(matrix)
     );
     if (this.activeBlock !== blocks.empty.id) {
       this.selectedBlock.position.add(intersection.normal ?? normal);

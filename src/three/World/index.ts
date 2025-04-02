@@ -1,3 +1,3 @@
 export { World } from "./World";
 export type { WorldParams } from "./World";
-export { blockTextures } from "./Blocks";
+export { blockTextures, uTextureAtlas } from "./Blocks";

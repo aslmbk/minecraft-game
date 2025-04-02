@@ -30,15 +30,15 @@ export class Config {
   };
 
   worldParams: WorldParams = {
-    seed: 100,
-    chunkDistance: 7,
+    seed: 1,
+    chunkDistance: 4,
     world: {
-      width: 12,
+      width: 21,
       height: 32,
     },
     terrain: {
-      scale: 30,
-      magnitude: 0.5,
+      scale: 80,
+      magnitude: 0.3,
       offset: 0.2,
     },
     blocks: {
@@ -53,6 +53,18 @@ export class Config {
       iron: {
         scale: { x: 40, y: 40, z: 40 },
         threshold: 0.9,
+      },
+    },
+    trees: {
+      frequency: 0.05,
+      trunk: {
+        minHeight: 4,
+        maxHeight: 7,
+      },
+      canopy: {
+        minRadius: 2,
+        maxRadius: 4,
+        density: 1.4,
       },
     },
   };
