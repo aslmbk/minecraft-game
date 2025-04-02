@@ -55,5 +55,16 @@ export class Config {
         threshold: 0.9,
       },
     },
+    trees: {
+      frequency: 0.99,
+      trunk: {
+        minHeight: 4,
+        maxHeight: 7,
+      },
+      canopy: {
+        minRadius: 2,
+        maxRadius: 4,
+      },
+    },
   };
 }

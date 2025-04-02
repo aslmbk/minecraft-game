@@ -34,6 +34,17 @@ export type TerrainParams = {
       threshold: number;
     };
   };
+  trees: {
+    frequency: number;
+    trunk: {
+      minHeight: number;
+      maxHeight: number;
+    };
+    canopy: {
+      minRadius: number;
+      maxRadius: number;
+    };
+  };
 };
 
 export type Coords = {
@@ -44,6 +55,8 @@ export type Coords = {
 
 export type ChunkCoords = Omit<Coords, "y">;
 
+type TreeData = { x: number; y: number; z: number; h: number; r: number };
+
 export class Terrain {
   private rng: RNG;
   private params: TerrainParams;
@@ -51,6 +64,7 @@ export class Terrain {
   private heights: number[][] = [];
   private chunkCoords: ChunkCoords;
   private worldCoords: Coords;
+  public treeData: TreeData[] = [];
   public instance!: THREE.InstancedMesh;
 
   constructor(params: TerrainParams, chunkCoords: ChunkCoords) {
@@ -65,6 +79,7 @@ export class Terrain {
     this.initialize();
     this.generateResources();
     this.generateTerrain();
+    this.generateTrees();
     this.generateActions();
     this.initializeMeshes();
   }
@@ -179,6 +194,36 @@ export class Terrain {
     this.instance.receiveShadow = true;
     this.instance.userData = this.chunkCoords;
     this.instance.position.copy(this.worldCoords);
+  }
+
+  private generateTrees() {
+    const noiseGenerator = new SimplexNoise(this.rng);
+    for (let x = 0; x < this.params.world.width; x++) {
+      for (let z = 0; z < this.params.world.width; z++) {
+        const value = noiseGenerator.noise(
+          x + this.worldCoords.x,
+          z + this.worldCoords.z
+        );
+        if (value < this.params.trees.frequency) continue;
+        const h = Math.round(
+          value *
+            (this.params.trees.trunk.maxHeight -
+              this.params.trees.trunk.minHeight) +
+            this.params.trees.trunk.minHeight
+        );
+        const r = Math.round(
+          value *
+            (this.params.trees.canopy.maxRadius -
+              this.params.trees.canopy.minRadius) +
+            this.params.trees.canopy.minRadius
+        );
+        const height = this.heights[x][z];
+        for (let i = 0; i <= h; i++) {
+          this.setBlockId({ x, y: height + i, z }, blocks.tree.id);
+        }
+        this.treeData.push({ x, y: height, z, h, r });
+      }
+    }
   }
 
   public generateMeshes() {
