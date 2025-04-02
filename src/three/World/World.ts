@@ -112,8 +112,15 @@ export class World extends THREE.Group {
                 };
                 const coords = this.worldCoordsToChunkCoords(pos);
                 const ch = this.getChunk(coords.chunkCoords);
-                if (!ch) continue;
-                ch.addBlock(coords.blockCoords, blocks.leaves.id);
+                if (
+                  ch?.getBlock(coords.blockCoords)?.id === blocks.empty.id &&
+                  new ActionsStore().get(
+                    { x: coords.chunkCoords.x, y: 0, z: coords.chunkCoords.z },
+                    coords.blockCoords
+                  ) === null
+                ) {
+                  ch.setBlockId(coords.blockCoords, blocks.leaves.id);
+                }
               }
             }
           }

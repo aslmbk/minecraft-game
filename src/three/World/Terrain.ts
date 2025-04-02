@@ -218,7 +218,7 @@ export class Terrain {
             this.params.trees.canopy.minRadius
         );
         const height = this.heights[x][z];
-        for (let i = 0; i <= h; i++) {
+        for (let i = 1; i <= h; i++) {
           this.setBlockId({ x, y: height + i, z }, blocks.tree.id);
         }
         this.treeData.push({ x, y: height, z, h, r });
@@ -261,7 +261,7 @@ export class Terrain {
     return this.data[pos.x][pos.y][pos.z];
   }
 
-  private setBlockId(pos: Coords, id: number) {
+  public setBlockId(pos: Coords, id: number) {
     if (!this.inBounds(pos)) return;
     this.data[pos.x][pos.y][pos.z].id = id;
   }
