@@ -49,8 +49,6 @@ const blockMaterials = {
   }),
   leaves: new THREE.MeshLambertMaterial({
     map: blockTextures.leaves.texture,
-    alphaMap: blockTextures.leaves.texture,
-    transparent: true,
   }),
   treeTop: new THREE.MeshLambertMaterial({
     map: blockTextures.treeTop.texture,

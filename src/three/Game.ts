@@ -6,7 +6,7 @@ import { Config } from "./Config";
 import { DebugController } from "./DebugController";
 import { Player } from "./Player";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
-import { blockTextures } from "./World/Blocks";
+import { blockTextures } from "./World";
 
 const cameraPosition = new THREE.Vector3(32, 16, 32);
 const screenCenter = new THREE.Vector2(0, 0);

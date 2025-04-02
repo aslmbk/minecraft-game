@@ -67,6 +67,33 @@ export class Terrain {
     this.initializeMeshes();
   }
 
+  private initializeMeshes() {
+    const maxCount =
+      this.params.world.width *
+      this.params.world.height *
+      this.params.world.width;
+
+    for (const blockName of blockNames) {
+      const block = blocks[blockName];
+      if (!block.material) continue;
+      const instance = new THREE.InstancedMesh(
+        blockGeometry,
+        block.material,
+        maxCount
+      );
+      instance.castShadow = true;
+      instance.receiveShadow = true;
+      instance.count = 0;
+      instance.userData = {
+        blockId: block.id,
+        x: this.chunkCoords.x,
+        z: this.chunkCoords.z,
+      };
+      this.instances[block.id] = instance;
+      this.meshes.add(instance);
+    }
+  }
+
   public initializeData() {
     this.data = [];
     for (let x = 0; x < this.params.world.width; x++) {
@@ -154,28 +181,6 @@ export class Terrain {
       { x: this.chunkCoords.x, y: 0, z: this.chunkCoords.z },
       this.setBlockId.bind(this)
     );
-  }
-
-  private initializeMeshes() {
-    const maxCount =
-      this.params.world.width *
-      this.params.world.height *
-      this.params.world.width;
-
-    for (const blockName of blockNames) {
-      const block = blocks[blockName];
-      if (!block.material) continue;
-      const instance = new THREE.InstancedMesh(
-        blockGeometry,
-        block.material,
-        maxCount
-      );
-      instance.castShadow = true;
-      instance.receiveShadow = true;
-      instance.count = 0;
-      this.instances[block.id] = instance;
-      this.meshes.add(instance);
-    }
   }
 
   public generateMeshes() {
