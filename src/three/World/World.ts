@@ -21,7 +21,7 @@ export class World extends THREE.Group {
   private idleAdding: ChunkCoords[] = [];
   public selectedBlock: THREE.Mesh;
   private lastPlayerPosition = new THREE.Vector3();
-  private activeBlock = blocks.grass.id;
+  private activeBlock = blocks.empty.id;
   private timeoutId: number | null = null;
 
   constructor(params: WorldParams) {

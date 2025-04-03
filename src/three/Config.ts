@@ -26,7 +26,7 @@ export class Config {
     radius: 0.5,
     height: 1.8,
     gravity: 32,
-    jumpSpeed: 10,
+    jumpSpeed: 12,
   };
 
   worldParams: WorldParams = {

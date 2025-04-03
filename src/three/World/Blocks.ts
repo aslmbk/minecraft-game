@@ -18,6 +18,7 @@ export const blockNames = [
   "tree",
   "sand",
   "cloud",
+  "snow",
 ] as const;
 
 export const blockTextures = [
@@ -100,6 +101,12 @@ export const blocks: BlocksInterface = {
     name: "cloud",
     textureIndex: -1,
     keyCode: "",
+  },
+  snow: {
+    id: 11,
+    name: "snow",
+    textureIndex: 10,
+    keyCode: "Digit9",
   },
 };
 
