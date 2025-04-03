@@ -46,6 +46,10 @@ export type TerrainParams = {
       density: number;
     };
   };
+  clouds: {
+    scale: number;
+    density: number;
+  };
 };
 
 export type Coords = {
@@ -78,6 +82,7 @@ export class Terrain {
     this.generateResources();
     this.generateTerrain();
     this.generateTrees();
+    this.generateClouds();
     this.generateActions();
     this.initializeMeshes();
   }
@@ -226,17 +231,36 @@ export class Terrain {
               const relDist = (rx * rx + ry * ry + rz * rz) / (r * r);
               const pos = { x: x + rx, y: height + h + ry, z: z + rz };
               if (
-                relDist >= 1 ||
-                this.getBlock(pos)?.id !== blocks.empty.id ||
-                this.rng.random() >
+                relDist < 1 &&
+                this.getBlock(pos)?.id === blocks.empty.id &&
+                this.rng.random() <=
                   (1 - relDist) * this.params.trees.canopy.density
               ) {
-                continue;
+                this.setBlockId(pos, blocks.leaves.id);
               }
-              this.setBlockId(pos, blocks.leaves.id);
             }
           }
         }
+      }
+    }
+  }
+
+  private generateClouds() {
+    const noiseGenerator = new SimplexNoise(new RNG(this.params.seed));
+    for (let x = 0; x < this.params.world.width; x++) {
+      for (let z = 0; z < this.params.world.width; z++) {
+        const value =
+          noiseGenerator.noise(
+            (x + this.worldCoords.x) / this.params.clouds.scale,
+            (z + this.worldCoords.z) / this.params.clouds.scale
+          ) *
+            0.5 +
+          0.5;
+        if (value > this.params.clouds.density) continue;
+        this.setBlockId(
+          { x, y: this.params.world.height - 1, z },
+          blocks.cloud.id
+        );
       }
     }
   }

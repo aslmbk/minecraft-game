@@ -31,7 +31,7 @@ export class Config {
 
   worldParams: WorldParams = {
     seed: 1,
-    chunkDistance: 4,
+    chunkDistance: 5,
     world: {
       width: 21,
       height: 32,
@@ -62,10 +62,14 @@ export class Config {
         maxHeight: 7,
       },
       canopy: {
-        minRadius: 2,
+        minRadius: 3,
         maxRadius: 4,
         density: 1.4,
       },
+    },
+    clouds: {
+      scale: 30,
+      density: 0.25,
     },
   };
 }

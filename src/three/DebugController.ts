@@ -140,6 +140,40 @@ export class DebugController {
     blocksFolder.addBinding(game.config.worldParams.blocks.iron, "threshold", {
       label: "iron threshold",
     });
+
+    const treesFolder = paramsFolder.addFolder({
+      title: "trees",
+      expanded: false,
+    });
+    treesFolder.addBinding(game.config.worldParams.trees, "frequency", {
+      label: "frequency",
+    });
+    treesFolder.addBinding(game.config.worldParams.trees.trunk, "minHeight", {
+      label: "trunk min height",
+    });
+    treesFolder.addBinding(game.config.worldParams.trees.trunk, "maxHeight", {
+      label: "trunk max height",
+    });
+    treesFolder.addBinding(game.config.worldParams.trees.canopy, "minRadius", {
+      label: "canopy min radius",
+    });
+    treesFolder.addBinding(game.config.worldParams.trees.canopy, "maxRadius", {
+      label: "canopy max radius",
+    });
+    treesFolder.addBinding(game.config.worldParams.trees.canopy, "density", {
+      label: "canopy density",
+    });
+
+    const cloudsFolder = paramsFolder.addFolder({
+      title: "clouds",
+      expanded: false,
+    });
+    cloudsFolder.addBinding(game.config.worldParams.clouds, "scale", {
+      label: "scale",
+    });
+    cloudsFolder.addBinding(game.config.worldParams.clouds, "density", {
+      label: "density",
+    });
   }
 
   private createLightsFolder(game: Game) {

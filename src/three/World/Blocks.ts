@@ -3,7 +3,6 @@ import * as THREE from "three";
 type Block<T extends string> = {
   id: number;
   name: T;
-  color: string | number;
   textureIndex: number;
   keyCode: string;
 };
@@ -45,71 +44,61 @@ export const blocks: BlocksInterface = {
   empty: {
     id: 0,
     name: "empty",
-    color: "transparent",
     textureIndex: -1,
     keyCode: "Digit0",
   },
   grass: {
     id: 1,
     name: "grass",
-    color: 0x559020,
     textureIndex: 0,
     keyCode: "Digit1",
   },
   dirt: {
     id: 3,
     name: "dirt",
-    color: 0x807020,
     textureIndex: 2,
     keyCode: "Digit2",
   },
   stone: {
     id: 4,
     name: "stone",
-    color: 0x808080,
     textureIndex: 3,
     keyCode: "Digit3",
   },
   coal: {
     id: 5,
     name: "coal",
-    color: 0x202020,
     textureIndex: 4,
     keyCode: "Digit4",
   },
   iron: {
     id: 6,
     name: "iron",
-    color: 0x806060,
     textureIndex: 5,
     keyCode: "Digit5",
   },
   leaves: {
     id: 7,
     name: "leaves",
-    color: 0x808080,
     textureIndex: 6,
     keyCode: "Digit6",
   },
   tree: {
     id: 8,
     name: "tree",
-    color: 0x808080,
     textureIndex: 7,
     keyCode: "Digit7",
   },
   sand: {
     id: 9,
     name: "sand",
-    color: 0x808080,
     textureIndex: 9,
     keyCode: "Digit8",
   },
   cloud: {
     id: 10,
     name: "cloud",
-    color: 0xf0f0f0,
-    textureIndex: 10,
+    textureIndex: -1,
     keyCode: "",
   },
 };
@@ -177,6 +166,8 @@ blockMaterial.onBeforeCompile = (shader) => {
       discard;
     } else if (textureID == ${blocks.tree.textureIndex} && !isTop && !isBottom) {
       blockColor = texture(uTextureAtlas, vec3(vUv, textureID + 1));
+    } else if (textureID == ${blocks.cloud.textureIndex}) {
+      blockColor = vec4(1.0);
     }
     diffuseColor *= blockColor;
     `
