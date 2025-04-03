@@ -214,6 +214,8 @@ export class Terrain {
     this.water.scale.setScalar(this.params.world.width);
     this.water.rotation.x = -Math.PI / 2;
     this.water.position.copy(this.worldCoords);
+    this.water.position.x += this.params.world.width / 2;
+    this.water.position.z += this.params.world.width / 2;
     this.water.position.y = this.params.water.height;
     this.water.userData.info = "water";
   }
