@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type CallbackFunction<Args extends any[]> = (...args: Args) => void;
+type CallbackFunction<Args> = Args extends void
+  ? () => void
+  : (args: Args) => void;
 
-type CallbacksStore<T extends { trigger: string; args: any[] }> = {
+type CallbacksStore<T extends { trigger: string; args: any }> = {
   [K in T["trigger"]]?: Record<
     number,
     CallbackFunction<Extract<T, { trigger: K }>["args"]>[]
@@ -20,14 +22,8 @@ export class Events<
     callback: CallbackFunction<Extract<T, { trigger: K }>["args"]>,
     order: O = 1 as O
   ): this {
-    if (!this.callbacks[eventName]) {
-      this.callbacks[eventName] = {};
-    }
-
-    if (!this.callbacks[eventName]![order]) {
-      this.callbacks[eventName]![order] = [];
-    }
-
+    this.callbacks[eventName] ??= {};
+    this.callbacks[eventName]![order] ??= [];
     this.callbacks[eventName]![order].push(callback);
     return this;
   }
@@ -49,13 +45,14 @@ export class Events<
     } else {
       delete this.callbacks[eventName];
     }
-
     return this;
   }
 
   public trigger<K extends T["trigger"]>(
     eventName: K,
-    ...args: Extract<T, { trigger: K }>["args"]
+    ...args: Extract<T, { trigger: K }>["args"] extends void
+      ? []
+      : [Extract<T, { trigger: K }>["args"]]
   ): this {
     const eventCallbacks = this.callbacks[eventName];
     if (!eventCallbacks) return this;
@@ -66,9 +63,8 @@ export class Events<
 
     for (const order of orders) {
       const callbacksArray = eventCallbacks[order];
-      callbacksArray.forEach((callback) => callback(...args));
+      callbacksArray.forEach((callback) => (callback as any)(...args));
     }
-
     return this;
   }
 }

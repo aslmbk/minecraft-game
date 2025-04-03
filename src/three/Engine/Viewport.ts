@@ -1,5 +1,12 @@
 import { Events } from "./utils/Events";
 
+export type ViewportEventArgs = {
+  width: number;
+  height: number;
+  ratio: number;
+  pixelRatio: number;
+};
+
 export class Viewport {
   private domElement: HTMLElement;
   public width = 0;
@@ -8,12 +15,7 @@ export class Viewport {
   public pixelRatio = 0;
   public readonly events = new Events<{
     trigger: "change";
-    args: {
-      width: number;
-      height: number;
-      ratio: number;
-      pixelRatio: number;
-    }[];
+    args: ViewportEventArgs;
   }>();
   private onResizeCb = this.onResize.bind(this);
 

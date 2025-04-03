@@ -78,6 +78,7 @@ export class Terrain {
   private worldCoords: Coords;
   public instance!: THREE.InstancedMesh;
   public water!: THREE.Mesh;
+
   constructor(params: TerrainParams, chunkCoords: ChunkCoords) {
     this.params = params;
     this.rng = new RNG(this.params.seed);

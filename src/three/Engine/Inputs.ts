@@ -1,12 +1,16 @@
 import { Events } from "./utils/Events";
 
 type Keys = Record<string, boolean>;
+export type KeyEventArgs = {
+  event: KeyboardEvent;
+  keys: Keys;
+};
 
 export class Inputs {
   public readonly keys: Keys = {};
   public readonly events = new Events<
-    | { trigger: "keydown"; args: { event: KeyboardEvent; keys: Keys }[] }
-    | { trigger: "keyup"; args: { event: KeyboardEvent; keys: Keys }[] }
+    | { trigger: "keydown"; args: KeyEventArgs }
+    | { trigger: "keyup"; args: KeyEventArgs }
   >();
 
   constructor() {

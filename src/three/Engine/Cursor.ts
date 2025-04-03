@@ -1,6 +1,6 @@
 import { Events } from "./utils/Events";
 
-type CursorEvent = {
+export type CursorEventArgs = {
   x: number;
   y: number;
   event: MouseEvent;
@@ -10,10 +10,10 @@ export class Cursor {
   public x = Infinity;
   public y = Infinity;
   public readonly events = new Events<
-    | { trigger: "move"; args: CursorEvent[] }
-    | { trigger: "down"; args: CursorEvent[] }
-    | { trigger: "up"; args: CursorEvent[] }
-    | { trigger: "click"; args: CursorEvent[] }
+    | { trigger: "move"; args: CursorEventArgs }
+    | { trigger: "down"; args: CursorEventArgs }
+    | { trigger: "up"; args: CursorEventArgs }
+    | { trigger: "click"; args: CursorEventArgs }
   >();
 
   private sizes = {

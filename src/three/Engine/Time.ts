@@ -1,10 +1,15 @@
 import { Events } from "./utils/Events";
 import { Timer } from "three/addons/misc/Timer.js";
 
+export type TimeEventArgs = {
+  delta: number;
+  elapsed: number;
+};
+
 export class Time extends Timer {
   public readonly events = new Events<{
     trigger: "tick";
-    args: [{ elapsed: number; delta: number }];
+    args: TimeEventArgs;
   }>();
 
   private running: boolean = false;

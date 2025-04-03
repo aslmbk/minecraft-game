@@ -18,6 +18,14 @@ type TextureLoaderOptions = {
   onError?: (err: unknown) => void;
 };
 
+export type LoadEventArgs = void;
+export type ProgressEventArgs = {
+  total: number;
+  loaded: number;
+  url: string;
+};
+export type ErrorEventArgs = string;
+
 export class Loader {
   private loadingManager: THREE.LoadingManager;
   private gltfLoader: GLTFLoader;
@@ -25,12 +33,9 @@ export class Loader {
   private textureAtlas: TextureAtlas;
 
   public readonly events = new Events<
-    | { trigger: "load"; args: [] }
-    | {
-        trigger: "progress";
-        args: [{ total: number; loaded: number; url: string }];
-      }
-    | { trigger: "error"; args: [string] }
+    | { trigger: "load"; args: LoadEventArgs }
+    | { trigger: "progress"; args: ProgressEventArgs }
+    | { trigger: "error"; args: ErrorEventArgs }
   >();
 
   constructor() {

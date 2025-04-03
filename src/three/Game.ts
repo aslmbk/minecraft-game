@@ -1,4 +1,9 @@
-import { Engine } from "./Engine";
+import {
+  Engine,
+  TimeEventArgs,
+  ViewportEventArgs,
+  KeyEventArgs,
+} from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
 import { World, blockTextures, uTextureAtlas, waterMaterial } from "./World";
@@ -62,19 +67,9 @@ export class Game extends Engine {
 
     this.time.events.on("tick", this.update.bind(this));
     this.viewport.events.on("change", this.resize.bind(this));
-    this.inputs.events.on("keydown", (params) => {
-      this.player.keyDownHandler(params);
-      this.world.setActiveBlock(params.event.code);
-    });
-    this.inputs.events.on("keyup", (params) => {
-      this.player.keyUpHandler(params);
-      this.controls.target.copy(this.player.position);
-      this.controls.object.position.copy(this.player.position);
-      this.controls.object.position.add(cameraPosition);
-    });
-    this.cursor.events.on("click", () => {
-      if (this.player.isActive) this.world.submitBlock();
-    });
+    this.inputs.events.on("keydown", this.keyDown.bind(this));
+    this.inputs.events.on("keyup", this.keyUp.bind(this));
+    this.cursor.events.on("click", this.click.bind(this));
 
     this.debugController = new DebugController(this);
     this.stats.activate("2");
@@ -82,7 +77,7 @@ export class Game extends Engine {
     this.loadTextures();
   }
 
-  private update({ delta, elapsed }: { delta: number; elapsed: number }) {
+  private update({ delta, elapsed }: TimeEventArgs) {
     let camera = this.camera;
     waterMaterial.uniforms.uTime.value = elapsed;
     if (this.player.isActive) {
@@ -104,9 +99,25 @@ export class Game extends Engine {
     this.renderer.render(this.scene, camera);
   }
 
-  private resize({ ratio }: { ratio: number }) {
+  private resize({ ratio }: ViewportEventArgs) {
     this.pointerLockCamera.aspect = ratio;
     this.pointerLockCamera.updateProjectionMatrix();
+  }
+
+  private keyDown(params: KeyEventArgs) {
+    this.player.keyDownHandler(params);
+    this.world.setActiveBlock(params.event.code);
+  }
+
+  private keyUp(params: KeyEventArgs) {
+    this.player.keyUpHandler(params);
+    this.controls.target.copy(this.player.position);
+    this.controls.object.position.copy(this.player.position);
+    this.controls.object.position.add(cameraPosition);
+  }
+
+  private click() {
+    if (this.player.isActive) this.world.submitBlock();
   }
 
   private loadTextures() {
