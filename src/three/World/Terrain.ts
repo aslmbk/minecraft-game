@@ -1,4 +1,10 @@
-import { blocks, blockGeometry, blockMaterial } from "./Blocks";
+import {
+  blocks,
+  blockGeometry,
+  blockMaterial,
+  waterGeometry,
+  waterMaterial,
+} from "./Blocks";
 import { RNG } from "./RNG";
 import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
 import * as THREE from "three";
@@ -50,6 +56,9 @@ export type TerrainParams = {
     scale: number;
     density: number;
   };
+  water: {
+    height: number;
+  };
 };
 
 export type Coords = {
@@ -68,7 +77,7 @@ export class Terrain {
   private chunkCoords: ChunkCoords;
   private worldCoords: Coords;
   public instance!: THREE.InstancedMesh;
-
+  public water!: THREE.Mesh;
   constructor(params: TerrainParams, chunkCoords: ChunkCoords) {
     this.params = params;
     this.rng = new RNG(this.params.seed);
@@ -160,7 +169,10 @@ export class Terrain {
           const pos = { x, y, z };
           const blockId = this.getBlock(pos)?.id;
           if (y === height && blockId === blocks.empty.id) {
-            this.setBlockId(pos, blocks.grass.id);
+            this.setBlockId(
+              pos,
+              y <= this.params.water.height ? blocks.sand.id : blocks.grass.id
+            );
           } else if (y < height && blockId === blocks.empty.id) {
             this.setBlockId(pos, blocks.dirt.id);
           } else if (y > height) {
@@ -197,6 +209,13 @@ export class Terrain {
     this.instance.receiveShadow = true;
     this.instance.userData = this.chunkCoords;
     this.instance.position.copy(this.worldCoords);
+
+    this.water = new THREE.Mesh(waterGeometry, waterMaterial);
+    this.water.scale.setScalar(this.params.world.width);
+    this.water.rotation.x = -Math.PI / 2;
+    this.water.position.copy(this.worldCoords);
+    this.water.position.y = this.params.water.height;
+    this.water.userData.info = "water";
   }
 
   private generateTrees() {
@@ -208,7 +227,13 @@ export class Terrain {
           noiseGenerator.noise(x + this.worldCoords.x, z + this.worldCoords.z) *
             0.5 +
           0.5;
-        if (n > this.params.trees.frequency) continue;
+        const height = this.heights[x][z];
+        if (
+          n > this.params.trees.frequency ||
+          height < this.params.water.height + 1
+        ) {
+          continue;
+        }
         const h = Math.round(
           this.rng.random() *
             (this.params.trees.trunk.maxHeight -
@@ -221,7 +246,6 @@ export class Terrain {
               this.params.trees.canopy.minRadius) +
             this.params.trees.canopy.minRadius
         );
-        const height = this.heights[x][z];
         for (let i = 1; i <= h; i++) {
           this.setBlockId({ x, y: height + i, z }, blocks.tree.id);
         }

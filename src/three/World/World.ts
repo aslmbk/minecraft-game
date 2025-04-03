@@ -1,5 +1,10 @@
 import * as THREE from "three";
-import { blockGeometry, blocks, selectedBlockMaterial } from "./Blocks";
+import {
+  blockGeometry,
+  blocks,
+  selectedBlockMaterial,
+  waterMaterial,
+} from "./Blocks";
 import { Terrain, TerrainParams, Coords, ChunkCoords } from "./Terrain";
 import { ActionsStore } from "./ActionsStore";
 
@@ -38,6 +43,9 @@ export class World extends THREE.Group {
     if (force) new ActionsStore().clear();
     const playerPos = playerPosition ?? this.lastPlayerPosition;
     this.lastPlayerPosition.copy(playerPos);
+
+    waterMaterial.uniforms.uSize.value = this.params.world.width;
+
     const { chunkCoords } = this.worldCoordsToChunkCoords(playerPos);
     const visibleChunksCoords: ChunkCoords[] = [];
     for (
@@ -88,6 +96,7 @@ export class World extends THREE.Group {
       this.idleAdding.map((coords) => {
         const chunk = new Terrain(this.params, coords);
         this.add(chunk.instance);
+        this.add(chunk.water);
         this.chunks.push(chunk);
         return chunk;
       })
@@ -132,6 +141,7 @@ export class World extends THREE.Group {
 
   private deleteChunk(chunk: Terrain) {
     this.remove(chunk.instance);
+    this.remove(chunk.water);
     chunk.instance.geometry.dispose();
     this.chunks.splice(this.chunks.indexOf(chunk), 1);
   }
@@ -139,6 +149,7 @@ export class World extends THREE.Group {
   public intersectionHandler(
     intersection: THREE.Intersection<THREE.InstancedMesh>
   ) {
+    if (!intersection.object.isInstancedMesh) return;
     const chunk = this.getChunk(intersection.object.userData as ChunkCoords);
     if (!chunk) return;
     intersection.object.getMatrixAt(intersection.instanceId!, matrix);

@@ -30,16 +30,16 @@ export class Config {
   };
 
   worldParams: WorldParams = {
-    seed: 1,
+    seed: 17,
     chunkDistance: 5,
     world: {
       width: 21,
       height: 32,
     },
     terrain: {
-      scale: 80,
-      magnitude: 0.3,
-      offset: 0.2,
+      scale: 120,
+      magnitude: 0.4,
+      offset: 0.3,
     },
     blocks: {
       stone: {
@@ -70,6 +70,9 @@ export class Config {
     clouds: {
       scale: 30,
       density: 0.25,
+    },
+    water: {
+      height: 3,
     },
   };
 }

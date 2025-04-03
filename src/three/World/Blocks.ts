@@ -115,6 +115,64 @@ export const selectedBlockMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.3,
 });
 
+export const waterGeometry = new THREE.PlaneGeometry(1, 1);
+export const waterMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uTextureAtlas,
+    uSize: new THREE.Uniform(1),
+    uTime: new THREE.Uniform(0),
+    fogColor: new THREE.Uniform(new THREE.Color(0xffffff)),
+    fogNear: new THREE.Uniform(1),
+    fogFar: new THREE.Uniform(100),
+  },
+  fog: true,
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+
+    #include <fog_pars_vertex>
+
+    void main() {
+      vUv = uv;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+
+      #include <fog_vertex>
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2DArray uTextureAtlas;
+    uniform float uSize;
+    uniform float uTime;
+    varying vec2 vUv;
+
+    #include <fog_pars_fragment>
+
+    float random(float seed) {
+      return fract(sin(dot(vec2(seed, seed), vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float createSmoothAlpha(float baseAlpha, float time) {
+      float frequency = 0.1 + baseAlpha * 20.0;
+      float phase = baseAlpha * 80.0; 
+      float wave = sin(phase + time * 0.8 * random(frequency)) - cos(frequency + time * 0.3 * random(phase)) * random(baseAlpha);
+      return mix(0.6, 1.0, clamp(wave, 0.0, 1.0));
+    }
+
+    void main() {
+      vec2 uv = fract(vUv * uSize);
+      float baseAlpha = texture(uTextureAtlas, vec3(uv, ${blocks.grass.textureIndex})).g;
+      float dynamicAlpha = createSmoothAlpha(baseAlpha, uTime);
+      vec3 color = vec3(0.1, 0.5, 0.8);
+      color = mix(color, color * 1.3, smoothstep(0.95, 1.0, dynamicAlpha));
+      gl_FragColor = vec4(color, dynamicAlpha);
+
+      #include <fog_fragment>
+    }
+  `,
+  side: THREE.DoubleSide,
+  transparent: true,
+});
+
 blockMaterial.onBeforeCompile = (shader) => {
   shader.uniforms = {
     ...shader.uniforms,

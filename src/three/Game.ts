@@ -1,7 +1,7 @@
 import { Engine } from "./Engine";
 import * as THREE from "three";
 import { Lights } from "./Lights";
-import { World, blockTextures, uTextureAtlas } from "./World";
+import { World, blockTextures, uTextureAtlas, waterMaterial } from "./World";
 import { Config } from "./Config";
 import { DebugController } from "./DebugController";
 import { Player } from "./Player";
@@ -27,6 +27,9 @@ export class Game extends Engine {
     this.renderer.setClearColor(this.config.clearColor);
     this.renderer.shadowMap.enabled = true;
     this.scene.fog = new THREE.Fog(this.config.clearColor, 64, 64 * 1.3);
+    waterMaterial.uniforms.fogColor.value.copy(this.config.clearColor);
+    waterMaterial.uniforms.fogNear.value = this.scene.fog.near;
+    waterMaterial.uniforms.fogFar.value = this.scene.fog.far;
 
     this.pointerLockCamera = new THREE.PerspectiveCamera(
       75,
@@ -79,8 +82,9 @@ export class Game extends Engine {
     this.loadTextures();
   }
 
-  private update({ delta }: { delta: number }) {
+  private update({ delta, elapsed }: { delta: number; elapsed: number }) {
     let camera = this.camera;
+    waterMaterial.uniforms.uTime.value = elapsed;
     if (this.player.isActive) {
       camera = this.pointerLockCamera;
       this.player.update(delta);
