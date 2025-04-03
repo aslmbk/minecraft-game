@@ -117,7 +117,10 @@ export const App = () => {
           />
         </div>
       </div>
-      <div className="toolbar" style={{ zIndex: 500 }}>
+      <div
+        className={`toolbar ${game && loaded ? "" : "hidden"}`}
+        style={{ zIndex: 500 }}
+      >
         <div className="toolbar-items">
           {blocks.map((block) => (
             <div

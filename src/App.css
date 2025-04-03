@@ -42,7 +42,7 @@
     z-index: -1;
   }
 
-  .start-screen.hidden {
+.hidden {
     display: none;
   }
 
