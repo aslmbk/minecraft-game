@@ -75,6 +75,7 @@ export class Game extends Engine {
     this.stats.activate("2");
 
     this.loadTextures();
+    this.loadPickAxe();
   }
 
   private update({ delta, elapsed }: TimeEventArgs) {
@@ -82,7 +83,7 @@ export class Game extends Engine {
     waterMaterial.uniforms.uTime.value = elapsed;
     if (this.player.isActive) {
       camera = this.pointerLockCamera;
-      this.player.update(delta);
+      this.player.update(delta, elapsed);
       this.world.generate({ playerPosition: this.player.position });
       this.lights.update(delta, this.player.position);
       this.pointerLockControls.update(delta);
@@ -117,7 +118,10 @@ export class Game extends Engine {
   }
 
   private click() {
-    if (this.player.isActive) this.world.submitBlock();
+    if (this.player.isActive) {
+      this.world.submitBlock();
+      this.player.startToolAnimation(this.time.getElapsed());
+    }
   }
 
   private loadTextures() {
@@ -126,6 +130,15 @@ export class Game extends Engine {
       texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
       uTextureAtlas.value = texture;
+    });
+  }
+
+  private loadPickAxe() {
+    this.loader.loadGLTF({
+      url: "/models/pickaxe.glb",
+      onLoad: (gltf) => {
+        this.player.setTool(gltf.scene);
+      },
     });
   }
 }

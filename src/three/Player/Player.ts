@@ -2,11 +2,7 @@ import { PointerLockControls } from "three/examples/jsm/controls/PointerLockCont
 import * as THREE from "three";
 import { World } from "../World";
 import { Physics } from "./Physics";
-
-type Inputs = {
-  keys: Record<string, boolean>;
-  event: KeyboardEvent;
-};
+import { KeyEventArgs } from "../Engine";
 
 export type PlayerConfig = {
   moveSpeed: number;
@@ -25,6 +21,8 @@ export class Player {
   private physics: Physics;
   private input = new THREE.Vector3();
   private velocity = new THREE.Vector3();
+  private toolContainer = new THREE.Group();
+  private toolAnimationStart = 0;
 
   private boundsHelper: THREE.Mesh | null = null;
 
@@ -44,13 +42,14 @@ export class Player {
     this._params = params;
     this.physics = new Physics(world, this);
     this._nextPosition.copy(this.controls.object.position);
+    this.controls.object.add(this.toolContainer);
   }
 
-  public keyDownHandler({ keys }: Inputs) {
+  public keyDownHandler({ keys }: KeyEventArgs) {
     this.updateMovementVector(keys);
   }
 
-  public keyUpHandler({ event, keys }: Inputs) {
+  public keyUpHandler({ event, keys }: KeyEventArgs) {
     if (event.code === "Escape" && !event.repeat) {
       if (this.controls.isLocked) this.controls.unlock();
       else this.controls.lock();
@@ -104,7 +103,7 @@ export class Player {
     this.onGround = onGround;
   }
 
-  public update(dt: number) {
+  public update(dt: number, elapsed: number) {
     this.frameRate = Math.min(1 / 60, dt);
     this.deltaTime += dt;
     if (!this.isActive || this.deltaTime < this.frameRate) return;
@@ -127,6 +126,11 @@ export class Player {
       this.boundsHelper.position.copy(this.position);
       this.boundsHelper.position.y -= this._params.height / 2;
     }
+
+    const animationTime = elapsed - this.toolAnimationStart;
+    this.toolContainer.rotation.x =
+      animationTime < 0.42 ? Math.sin(animationTime * 30) * 0.5 : 0;
+
     this.deltaTime -= this.frameRate;
   }
 
@@ -161,5 +165,20 @@ export class Player {
     });
     this.boundsHelper = new THREE.Mesh(geometry, material);
     return this.boundsHelper;
+  }
+
+  public setTool(tool: THREE.Object3D) {
+    this.toolContainer.clear();
+    this.toolContainer.add(tool);
+    this.toolContainer.position.set(0.6, -0.3, -0.5);
+    this.toolContainer.scale.setScalar(0.5);
+    this.toolContainer.rotation.z = Math.PI / 2;
+    this.toolContainer.rotation.y = Math.PI + 0.2;
+    this.toolContainer.receiveShadow = true;
+    this.toolContainer.castShadow = true;
+  }
+
+  public startToolAnimation(elapsed: number) {
+    this.toolAnimationStart = elapsed;
   }
 }
